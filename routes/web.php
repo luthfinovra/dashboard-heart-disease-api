@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+Route::redirect('/', '/api/');
+
+Route::fallback(static function () {
+    return response()->json([
+        'success' => false,
+        'data' => [],
+        'message' => 'Not found'
+    ]);
 });
