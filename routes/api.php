@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminUserController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -23,9 +24,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Routes accessible only by admins
     Route::middleware(['checkRole:admin'])->prefix('admin')->group(function () {
-        Route::post('/create-user', [AuthController::class, 'createUser']);
-        Route::get('/dashboard', [AuthController::class, 'adminDashboard']);
-        
+        Route::get('/dashboard', [AuthController::class, 'adminDashboard'])->name('admin.dashboard');
+    
+        Route::post('/users', [AdminUserController::class, 'createUser'])->name('admin.users.create');
+        Route::post('/users/{id}/approve', [AdminUserController::class, 'approveUser'])->name('admin.users.approve');
+        Route::post('/users/{id}/reject', [AdminUserController::class, 'rejectUser'])->name('admin.users.reject');
+        Route::put('/users/{id}', [AdminUserController::class, 'editUser'])->name('admin.users.edit');
+        Route::delete('/users/{id}', [AdminUserController::class, 'deleteUser'])->name('admin.users.delete');
+        Route::get('/users', [AdminUserController::class, 'getUsers'])->name('admin.users.index');
+        Route::get('/users/{id}', [AdminUserController::class, 'getUserDetails'])->name('admin.users.show');
     });
 
     // Routes accessible only by operators
