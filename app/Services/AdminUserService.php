@@ -22,7 +22,11 @@ class AdminUserService
                 'phone_number' => $data['phone_number'] ?? null,
             ]);
 
-            return [true, 'User created successfully.', $user];
+            if ($user->role === 'operator' && isset($data['disease_ids'])) {
+                $user->managedDiseases()->attach($data['disease_ids']);
+            }
+
+            return [true, 'User created successfully.', $user->toArray()];
         } catch (\Throwable $exception) {
             // TO DO logging
             return [false, 'User creation failed: ' . $exception->getMessage(), []];
@@ -50,7 +54,7 @@ class AdminUserService
             $user->approval_status = 'rejected';
             $user->save();
 
-            return [true, 'User rejected successfully.', []];
+            return [true, 'User rejected successfully.', $user];
         } catch (\Throwable $exception) {
             // TO DO logging
             return [false, 'User rejection failed: ' . $exception->getMessage(), []];
@@ -60,23 +64,38 @@ class AdminUserService
     public function editUser($id, array $data): array
     {
         try {
-            $user = User::findOrFail($id);
+            $user = User::find($id);
+            if (!$user) {
+                return [false, 'User not found.', []];
+            }
 
-             // Check if password is provided
             if (isset($data['password']) && $data['password']) {
                 $data['password'] = Hash::make($data['password']);
             } else {
                 unset($data['password']);
             }
 
+            if (isset($data['email']) && $data['email'] !== $user->email) {
+                $existingUser = User::where('email', $data['email'])->first();
+                if ($existingUser) {
+                    return [false, 'Email address is already in use.', []];
+                }
+            }
+
             $user->update($data);
+
+            if ($user->role === 'operator' && array_key_exists('disease_ids', $data)) {
+                $user->managedDiseases()->sync($data['disease_ids']);
+            }
 
             return [true, 'User updated successfully.', $user];
         } catch (\Throwable $exception) {
-            // TO DO logging
+            // TO DO: Add logging here
             return [false, 'User update failed: ' . $exception->getMessage(), []];
         }
     }
+
+
 
     public function deleteUser($id): array
     {
@@ -107,7 +126,11 @@ class AdminUserService
             $query->where('approval_status', $filters['approval_status']);
         }
 
-        $users = $query->paginate(10); 
+        $perPage = isset($filters['per_page']) && is_numeric($filters['per_page']) && $filters['per_page'] > 0 
+        ? (int) $filters['per_page'] 
+        : 10;
+
+        $users = $query->paginate($perPage); 
 
         $paginatedData = [
             'users' => $users->items(),
@@ -129,6 +152,20 @@ class AdminUserService
         } catch (\Throwable $exception) {
             // TO DO logging
             return [false, 'Failed to retrieve user details: ' . $exception->getMessage(), []];
+        }
+    }
+
+    public function assignOperatorToDiseases(int $userId, array $diseaseIds): array
+    {
+        try {
+            $user = User::findOrFail($userId);
+
+            $user->managedDiseases()->sync($diseaseIds);
+
+            return [true, 'Diseases assigned to operator successfully.', $user];
+        } catch (\Throwable $exception) {
+            // Log exception
+            return [false, 'Failed to assign diseases to operator: ' . $exception->getMessage(), []];
         }
     }
 }

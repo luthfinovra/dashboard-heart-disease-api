@@ -6,6 +6,7 @@ use App\Helpers\ResponseJson; // Import the ResponseJson helper
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\EditUserRequest;
 use App\Services\AdminUserService;
+use App\Services\AdminDiseaseService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -20,13 +21,26 @@ class AdminUserController extends Controller
 
     public function createUser(CreateUserRequest $request): JsonResponse
     {
-        [$success, $message, $data] = $this->adminUserService->createUser($request->validated());
+
+        $validatedData = $request->validated();
+
+        [$success, $message, $data] = $this->adminUserService->createUser($validatedData);
 
         if(!$success){
-            return ResponseJson::failedResponse($message, $data);
+            return ResponseJson::failedResponse($message, $validatedData);
         }
 
-        return ResponseJson::successResponse('User created successfully.', $data);
+        if ($validatedData['role'] === 'operator' && isset($validatedData['disease_ids'])) {
+            [$assignSuccess, $assignMessage, $data] = $this->adminUserService->assignOperatorToDiseases($data['id'], $validatedData['disease_ids']);
+            
+            if ($assignSuccess) {
+                $message .= ' ' . $assignMessage;
+            } else {
+                return ResponseJson::failedResponse($assignMessage);
+            }
+        }
+
+        return ResponseJson::successResponse($message, $data);
     }
 
     public function approveUser($id): JsonResponse

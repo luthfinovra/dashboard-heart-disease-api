@@ -47,4 +47,19 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    protected $appends = ['managed_diseases'];
+
+    public function managedDiseases()
+    {
+        return $this->belongsToMany(Disease::class, 'disease_operator', 'user_id', 'disease_id');
+    }
+
+    public function getManagedDiseasesAttribute()
+    {
+        if ($this->role === 'operator') {
+            return $this->managedDiseases()->get(['disease_id', 'name'])->toArray();
+        }
+        return null;
+    }
 }

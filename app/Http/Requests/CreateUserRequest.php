@@ -22,6 +22,8 @@ class CreateUserRequest extends FormRequest
             'gender' => 'nullable|in:male,female,prefer not to say',
             'phone_number' => 'nullable|string|max:50',
             'tujuan_permohonan' => 'nullable|string|max:65535',
+            'disease_ids' => 'required_if:role,operator|array',
+            'disease_ids.*' => 'exists:diseases,id'
         ];
     }
 
@@ -44,6 +46,9 @@ class CreateUserRequest extends FormRequest
             'gender.in' => 'Gender tidak sesuai.',
             'phone_number.max' => 'Nomor telepon maksimal 50 karakter.',
             'tujuan_permohonan.max' => 'Tujuan permohonan maksimal 65535 karakter',
+            'disease_ids.required_if' => 'Disease IDs harus diisi jika role adalah operator.',
+            'disease_ids.array' => 'Disease IDs harus berupa array.',
+            'disease_ids.*.exists' => 'Setiap Disease ID yang dipilih harus valid dan ada dalam database.',
         ];
     }
 

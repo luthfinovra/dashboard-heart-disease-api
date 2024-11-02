@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminDiseaseController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -18,21 +19,25 @@ use App\Http\Controllers\AdminUserController;
 
 Route::middleware('auth:sanctum')->group(function () {
     
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-
     // Routes accessible only by admins
     Route::middleware(['checkRole:admin'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AuthController::class, 'adminDashboard'])->name('admin.dashboard');
     
-        Route::post('/users', [AdminUserController::class, 'createUser'])->name('admin.users.create');
-        Route::post('/users/{id}/approve', [AdminUserController::class, 'approveUser'])->name('admin.users.approve');
-        Route::post('/users/{id}/reject', [AdminUserController::class, 'rejectUser'])->name('admin.users.reject');
-        Route::put('/users/{id}', [AdminUserController::class, 'editUser'])->name('admin.users.edit');
-        Route::delete('/users/{id}', [AdminUserController::class, 'deleteUser'])->name('admin.users.delete');
-        Route::get('/users', [AdminUserController::class, 'getUsers'])->name('admin.users.index');
-        Route::get('/users/{id}', [AdminUserController::class, 'getUserDetails'])->name('admin.users.show');
+        Route::prefix('users')->group(function(){
+            Route::get('/', [AdminUserController::class, 'getUsers'])->name('admin.users.index');
+            Route::post('/', [AdminUserController::class, 'createUser'])->name('admin.users.create');
+            
+            Route::post('/approve/{id}', [AdminUserController::class, 'approveUser'])->name('admin.users.approve');
+            Route::post('/reject/{id}', [AdminUserController::class, 'rejectUser'])->name('admin.users.reject');
+
+            Route::put('/{id}', [AdminUserController::class, 'editUser'])->name('admin.users.edit');
+            Route::delete('/{id}', [AdminUserController::class, 'deleteUser'])->name('admin.users.delete');
+            Route::get('/{id}', [AdminUserController::class, 'getUserDetails'])->name('admin.users.show');
+        });
+
+        Route::prefix('diseases')->group(function(){
+            Route::post('/', [AdminDiseaseController::class, 'createDisease'])->middleware('auth:admin');
+        });
     });
 
     // Routes accessible only by operators
