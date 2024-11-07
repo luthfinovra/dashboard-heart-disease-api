@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\AdminDiseaseController;
+use App\Http\Controllers\DiseaseController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -19,48 +19,53 @@ use App\Http\Controllers\AdminDiseaseController;
 
 Route::middleware('auth:sanctum')->group(function () {
     
-    // Routes accessible only by admins
+    // Admin-only routes for user management
     Route::middleware(['checkRole:admin'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AuthController::class, 'adminDashboard'])->name('admin.dashboard');
     
         Route::prefix('users')->group(function(){
             Route::get('/', [AdminUserController::class, 'getUsers'])->name('admin.users.index');
             Route::post('/', [AdminUserController::class, 'createUser'])->name('admin.users.create');
-            
             Route::post('/approve/{id}', [AdminUserController::class, 'approveUser'])->name('admin.users.approve');
             Route::post('/reject/{id}', [AdminUserController::class, 'rejectUser'])->name('admin.users.reject');
-
             Route::put('/{id}', [AdminUserController::class, 'editUser'])->name('admin.users.edit');
             Route::delete('/{id}', [AdminUserController::class, 'deleteUser'])->name('admin.users.delete');
             Route::get('/{id}', [AdminUserController::class, 'getUserDetails'])->name('admin.users.show');
         });
+    });
 
-        Route::prefix('diseases')->group(function(){
-            Route::post('/', [AdminDiseaseController::class, 'createDisease'])->middleware('auth:admin');
+    // Disease routes
+    Route::prefix('diseases')->group(function(){
+        Route::get('/', [DiseaseController::class, 'getDiseases'])->name('diseases.index');
+        Route::get('/{id}', [DiseaseController::class, 'getDiseaseDetails'])->name('diseases.show');
+
+        Route::middleware(['checkRole:admin'])->group(function() {
+            Route::post('/', [DiseaseController::class, 'createDisease'])->name('diseases.create');
+            Route::put('/{id}', [DiseaseController::class, 'editDisease'])->name('diseases.edit');
+            Route::delete('/{id}', [DiseaseController::class, 'deleteDisease'])->name('diseases.delete');
         });
     });
 
-    // Routes accessible only by operators
+    // Operator-only routes
     Route::middleware(['checkRole:operator'])->prefix('operator')->group(function () {
-        Route::get('/dashboard', [AuthController::class, 'operatorDashboard']);
-        
+        Route::get('/dashboard', [AuthController::class, 'operatorDashboard'])->name('operator.dashboard');
     });
     
-    // Routes accessible only by researchers
+    // Researcher-only routes
     Route::middleware(['checkRole:researcher'])->prefix('researcher')->group(function () {
-        Route::get('/data', [AuthController::class, 'researcherData']);
-        
+        Route::get('/data', [AuthController::class, 'researcherData'])->name('researcher.data');
     });
 });
 
 // Authentication Routes
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+    Route::post('/register', [AuthController::class, 'register'])->name('auth.register');
+    Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+    Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 });
 
-Route::get('/', static function () {
+// Root route
+Route::get('/', function () {
     return response()->json([
         'success' => true,
         'data' => [],

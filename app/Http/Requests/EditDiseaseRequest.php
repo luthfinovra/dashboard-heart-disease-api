@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use App\Helpers\ResponseJson;
 
-class CreateDiseaseRequest extends FormRequest
+class EditDiseaseRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,11 +24,12 @@ class CreateDiseaseRequest extends FormRequest
      */
     public function rules(): array
     {
+        // TO DO, still using create disease request templates
         return [
-            'name' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string|max:65535',
-            'schema' => 'required|json',
-            'cover_page' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'name' => 'sometimes|required|string|max:255',
+            'deskripsi' => 'sometimes|nullable|string|max:65535',
+            //'schema' => 'required|json',
+            'cover_page' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
 
@@ -38,8 +39,8 @@ class CreateDiseaseRequest extends FormRequest
             'name.required' => 'Nama penyakit harus diisi.',
             'name.max' => 'Nama penyakit maksimal 255 karakter.',
             'deskripsi.max' => 'Deskripsi penyakit maksimal 65535 karakter.',
-            'schema.required' => 'Schema harus diisi.',
-            'schema.json' => 'Schema harus dalam format JSON yang valid.',
+            //'schema.required' => 'Schema harus diisi.',
+            //'schema.json' => 'Schema harus dalam format JSON yang valid.',
             'cover_page.string' => 'Cover page harus berupa string.',
             'cover_page.image' => 'Cover page harus berupa file gambar.',
             'cover_page.mimes' => 'Cover page harus berupa file bertipe: jpeg, png, jpg, gif, atau svg.',
