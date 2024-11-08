@@ -20,4 +20,8 @@ class Disease extends Model
     {
         return $this->belongsToMany(User::class, 'disease_operator', 'disease_id', 'user_id');
     }
+
+    protected $casts = [
+        'schema' => 'json' 
+    ];
 }

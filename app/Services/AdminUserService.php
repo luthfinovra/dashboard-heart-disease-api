@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AdminUserService
 {
     public function createUser(array $data): array
     {
         try {
+            DB::beginTransaction();
+
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -26,8 +29,10 @@ class AdminUserService
                 $user->managedDiseases()->attach($data['disease_ids']);
             }
 
+            DB::commit();
             return [true, 'User created successfully.', $user->toArray()];
         } catch (\Throwable $exception) {
+            DB::rollBack();
             // TO DO logging
             return [false, 'User creation failed: ' . $exception->getMessage(), []];
         }
@@ -64,6 +69,8 @@ class AdminUserService
     public function editUser($id, array $data): array
     {
         try {
+            DB::beginTransaction();
+
             $user = User::find($id);
             if (!$user) {
                 return [false, 'User not found.', []];
@@ -88,8 +95,10 @@ class AdminUserService
                 $user->managedDiseases()->sync($data['disease_ids']);
             }
 
+            DB::commit();
             return [true, 'User updated successfully.', $user];
         } catch (\Throwable $exception) {
+            DB::rollBack();
             // TO DO: Add logging here
             return [false, 'User update failed: ' . $exception->getMessage(), []];
         }

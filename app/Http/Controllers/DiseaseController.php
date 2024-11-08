@@ -15,7 +15,7 @@ class DiseaseController extends Controller
 
     public function __construct(DiseaseService $diseaseService)
     {
-        $this->DiseaseService = $diseaseService;
+        $this->diseaseService = $diseaseService;
     }
 
     public function createDisease(CreateDiseaseRequest $request): JsonResponse

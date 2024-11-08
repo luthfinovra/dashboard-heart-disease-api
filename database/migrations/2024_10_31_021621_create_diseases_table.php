@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('deskripsi');
-            $table->json('schema');
+            $table->jsonb('schema');
             $table->string('cover_page')->nullable();
             $table->timestamps();
         });

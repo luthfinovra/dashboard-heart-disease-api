@@ -6,7 +6,7 @@ use App\Helpers\ResponseJson; // Import the ResponseJson helper
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\EditUserRequest;
 use App\Services\AdminUserService;
-use App\Services\AdminDiseaseService;
+use App\Services\DiseaseService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 

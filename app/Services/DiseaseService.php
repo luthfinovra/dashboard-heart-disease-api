@@ -11,19 +11,27 @@ class DiseaseService
     public function createDisease(array $data): array
     {
         try {
-            $image_url = 'test';
+            DB::beginTransaction();
+            
+            $image_url = null;
+            // if (isset($data['cover_page']) && $data['cover_page']) {
+            //     $file = $data['cover_page'];
+            //     $filename = Str::slug($data['name']) . '-' . time() . '.' . $file->getClientOriginalExtension();
+            //     $path = $file->storeAs('public/diseases/covers', $filename);
+            //     $image_url = Storage::url($path);
+            // }
 
             $disease = Disease::create([
                 'name' => $data['name'],
                 'deskripsi' => $data['deskripsi'],
-                'schema' => $data['schema'], // TO DO Validation
-
-                // TO DO
+                'schema' => $data['schema'],
                 'cover_page' => $image_url,
             ]);
 
+            DB::commit();
             return [true, 'Disease created successfully.', $disease->toArray()];
         } catch (\Throwable $exception) {
+            DB::rollBack();
             // TO DO logging
             return [false, 'Disease creation failed: ' . $exception->getMessage(), []];
         }
@@ -32,21 +40,34 @@ class DiseaseService
     public function editDisease($id, array $data): array
     {
         try {
+            DB::beginTransaction();
+
             $disease = Disease::find($id);
             if (!$disease) {
                 return [false, 'Disease not found.', []];
             }
 
-            // TO DO
-            $disease->update($data);
+            // if (isset($data['cover_page']) && $data['cover_page']) {
+            //     // Delete old cover if exists
+            //     if ($disease->cover_page) {
+            //         $oldPath = str_replace('/storage', 'public', $disease->cover_page);
+            //         Storage::delete($oldPath);
+            //     }
 
-            // if ($user->role === 'operator' && array_key_exists('disease_ids', $data)) {
-            //     $user->managedDiseases()->sync($data['disease_ids']);
+            //     $file = $data['cover_page'];
+            //     $filename = Str::slug($data['name']) . '-' . time() . '.' . $file->getClientOriginalExtension();
+            //     $path = $file->storeAs('public/diseases/covers', $filename);
+            //     $data['cover_page'] = Storage::url($path);
+            // } else {
+            //     unset($data['cover_page']);
             // }
 
+            $disease->update($data);
+
+            DB::commit();
             return [true, 'Disease updated successfully.', $disease];
         } catch (\Throwable $exception) {
-            // TO DO: Add logging here
+            DB::rollBack();
             return [false, 'Disease update failed: ' . $exception->getMessage(), []];
         }
     }
@@ -67,42 +88,39 @@ class DiseaseService
 
     public function getDisease(array $filters): array
     {
-        try{
-        $query = Disease::query();
+        try {
+            $query = Disease::query();
 
-        // if (isset($filters['role'])) {
-        //     $query->where('role', $filters['role']);
-        // }
+            if (isset($filters['name'])) {
+                $query->where('name', 'like', '%' . $filters['name'] . '%');
+            }
 
-        // if (isset($filters['name'])) {
-        //     $query->where('name', 'like', '%' . $filters['name'] . '%');
-        // }
+            // Search in schema
+            if (isset($filters['column_type'])) {
+                $query->whereJsonContains('schema->columns', ['type' => $filters['column_type']]);
+            }
 
-        // if (isset($filters['approval_status'])) {
-        //     $query->where('approval_status', $filters['approval_status']);
-        // }
+            if (isset($filters['column_name'])) {
+                $query->whereJsonContains('schema->columns', ['name' => $filters['column_name']]);
+            }
 
-        $perPage = isset($filters['per_page']) && is_numeric($filters['per_page']) && $filters['per_page'] > 0 
-        ? (int) $filters['per_page'] 
-        : 10;
+            $perPage = isset($filters['per_page']) && is_numeric($filters['per_page']) && $filters['per_page'] > 0 
+                ? (int) $filters['per_page'] 
+                : 10;
 
-        $diseases = $query->paginate($perPage); 
+            $diseases = $query->paginate($perPage);
 
-        $paginatedData = [
-            'diseases' => $diseases->items(),
-            'current_page' => $diseases->currentPage(),
-            'last_page' => $diseases->lastPage(),
-            'per_page' => $diseases->perPage(),
-            'total' => $diseases->total(),
-        ];
-
-        return [true, 'Diseases retrieved successfully.', $paginatedData];
-    } catch (\Throwable $exception){
-        // TO DO Logging
-        return [false, 'Failed to retrieve diseases data: ' . $exception->getMessage(), []];
+            return [true, 'Diseases retrieved successfully.', [
+                'diseases' => $diseases->items(),
+                'current_page' => $diseases->currentPage(),
+                'last_page' => $diseases->lastPage(),
+                'per_page' => $diseases->perPage(),
+                'total' => $diseases->total(),
+            ]];
+        } catch (\Throwable $exception) {
+            return [false, 'Failed to retrieve diseases: ' . $exception->getMessage(), []];
+        }
     }
-    }
-
 
     public function getDiseaseDetails($id): array
     {

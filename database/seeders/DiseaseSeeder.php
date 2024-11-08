@@ -13,7 +13,7 @@ class DiseaseSeeder extends Seeder
             [
                 'name' => 'Arrhythmia',
                 'deskripsi' => 'A condition where the heart beats with an irregular or abnormal rhythm.',
-                'schema' => json_encode([
+                'schema' => [ 
                     "columns" => [
                         ["name" => "Record", "type" => "string"],
                         ["name" => "Annotations", "type" => "string"],
@@ -23,13 +23,13 @@ class DiseaseSeeder extends Seeder
                         ["name" => "Tanggal tes", "type" => "date"],
                         ["name" => "File Detak jantung", "type" => "file", "format" => ".wav"]
                     ]
-                ]),
+                ],
                 'cover_page' => null,
             ],
             [
                 'name' => 'Myocardial',
                 'deskripsi' => 'A condition related to heart muscle injury or damage.',
-                'schema' => json_encode([
+                'schema' => [ 
                     "columns" => [
                         ["name" => "Nama Pasien", "type" => "string"],
                         ["name" => "Umur", "type" => "integer"],
@@ -39,7 +39,7 @@ class DiseaseSeeder extends Seeder
                         ["name" => "Tanggal tes", "type" => "date"],
                         ["name" => "Record data", "type" => "file", "format" => ".wav", "multiple" => true]
                     ]
-                ]),
+                ],
                 'cover_page' => null,
             ]
         ];
