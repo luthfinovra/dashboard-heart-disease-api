@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\DiseaseController;
+use App\Http\Controllers\DiseaseRecordController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -44,6 +45,19 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{id}', [DiseaseController::class, 'editDisease'])->name('diseases.edit');
             Route::delete('/{id}', [DiseaseController::class, 'deleteDisease'])->name('diseases.delete');
         });
+    });
+
+    // Disease Records Routes
+    Route::prefix('diseases/{diseaseId}/records')->group(function () {
+        Route::get('/', [DiseaseRecordController::class, 'getDiseaseRecords'])->name('disease_records.index');
+        
+        Route::get('/{id}', [DiseaseRecordController::class, 'getDiseaseRecordDetails'])->name('disease_records.show');
+
+        Route::middleware(['checkRole:admin,operator'])->post('/', [DiseaseRecordController::class, 'createDiseaseRecord'])->name('disease_records.store');
+
+        Route::middleware(['checkRole:admin,operator'])->put('/{id}', [DiseaseRecordController::class, 'editDiseaseRecord'])->name('disease_records.update');
+        
+        Route::middleware(['checkRole:admin'])->delete('/{id}', [DiseaseRecordController::class, 'deleteDiseaseRecord'])->name('disease_records.delete');
     });
 
     // Operator-only routes

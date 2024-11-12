@@ -16,12 +16,17 @@ class Disease extends Model
         'cover_page'
     ];
 
+    protected $casts = [
+        'schema' => 'json' 
+    ];
+
     public function operators()
     {
         return $this->belongsToMany(User::class, 'disease_operator', 'disease_id', 'user_id');
     }
 
-    protected $casts = [
-        'schema' => 'json' 
-    ];
+    public function diseaseRecords()
+    {
+        return $this->hasMany(DiseaseRecord::class);
+    }
 }

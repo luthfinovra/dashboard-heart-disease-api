@@ -20,7 +20,7 @@ class DiseaseController extends Controller
 
     public function createDisease(CreateDiseaseRequest $request): JsonResponse
     {
-        [$success, $message, $data] = $this->diseaseService->createDisease($request->validated()); // TO DO
+        [$success, $message, $data] = $this->diseaseService->createDisease($request->validated());
 
         if (!$success) {
             return ResponseJson::failedResponse($message, $data);

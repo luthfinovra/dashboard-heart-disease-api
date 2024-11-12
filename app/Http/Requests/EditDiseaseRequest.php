@@ -41,7 +41,6 @@ class EditDiseaseRequest extends FormRequest
             'deskripsi.max' => 'Deskripsi penyakit maksimal 65535 karakter.',
             //'schema.required' => 'Schema harus diisi.',
             //'schema.json' => 'Schema harus dalam format JSON yang valid.',
-            'cover_page.string' => 'Cover page harus berupa string.',
             'cover_page.image' => 'Cover page harus berupa file gambar.',
             'cover_page.mimes' => 'Cover page harus berupa file bertipe: jpeg, png, jpg, gif, atau svg.',
             'cover_page.max' => 'Ukuran cover page maksimal 2MB.',

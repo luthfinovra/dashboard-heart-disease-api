@@ -4,11 +4,15 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
 class AdminUserService
 {
+    private const DEFAULT_PER_PAGE = 10;
+    private const MAX_PER_PAGE = 100;
+
     public function createUser(array $data): array
     {
         try {
@@ -121,35 +125,17 @@ class AdminUserService
 
     public function getUsers(array $filters): array
     {
-        $query = User::query();
+        try {
+            $query = User::query();
+            
+            $this->applyUserFilters($query, $filters);
+            
+            $paginatedData = $this->paginateResults($query, $filters, 'users');
 
-        if (isset($filters['role'])) {
-            $query->where('role', $filters['role']);
+            return [true, 'Users retrieved successfully.', $paginatedData];
+        } catch (\Throwable $exception) {
+            return [false, 'Failed to retrieve users: ' . $exception->getMessage(), []];
         }
-
-        if (isset($filters['name'])) {
-            $query->where('name', 'like', '%' . $filters['name'] . '%');
-        }
-
-        if (isset($filters['approval_status'])) {
-            $query->where('approval_status', $filters['approval_status']);
-        }
-
-        $perPage = isset($filters['per_page']) && is_numeric($filters['per_page']) && $filters['per_page'] > 0 
-        ? (int) $filters['per_page'] 
-        : 10;
-
-        $users = $query->paginate($perPage); 
-
-        $paginatedData = [
-            'users' => $users->items(),
-            'current_page' => $users->currentPage(),
-            'last_page' => $users->lastPage(),
-            'per_page' => $users->perPage(),
-            'total' => $users->total(),
-        ];
-
-        return [true, 'Users retrieved successfully.', $paginatedData];
     }
 
 
@@ -176,5 +162,58 @@ class AdminUserService
             // Log exception
             return [false, 'Failed to assign diseases to operator: ' . $exception->getMessage(), []];
         }
+    }
+
+    private function applyUserFilters(Builder $query, array $filters): void
+    {
+        if (!empty($filters['role'])) {
+            $query->where('role', $filters['role']);
+        }
+
+        if (!empty($filters['name'])) {
+            $query->where('name', 'like', '%' . trim($filters['name']) . '%');
+        }
+
+        if (!empty($filters['approval_status'])) {
+            $query->where('approval_status', $filters['approval_status']);
+        }
+
+        // Add sorting if needed
+        $query->orderBy('created_at', 'desc');
+    }
+
+    private function paginateResults(Builder $query, array $filters, string $itemsKey): array
+    {
+        $perPage = isset($filters['per_page']) && 
+                  is_numeric($filters['per_page']) && 
+                  $filters['per_page'] > 0 && 
+                  $filters['per_page'] <= self::MAX_PER_PAGE
+            ? (int) $filters['per_page']
+            : self::DEFAULT_PER_PAGE;
+
+        $page = isset($filters['page']) && 
+                is_numeric($filters['page']) && 
+                $filters['page'] > 0
+            ? (int) $filters['page']
+            : 1;
+
+        $results = $query->paginate($perPage, ['*'], 'page', $page);
+
+        if ($results->isEmpty() && $results->currentPage() > 1) {
+            $results = $query->paginate($perPage, ['*'], 'page', $results->lastPage());
+        }
+
+        return [
+            $itemsKey => $results->items(),
+            'pagination' => [
+                'current_page' => $results->currentPage(),
+                'last_page' => $results->lastPage(),
+                'per_page' => (int) $results->perPage(),
+                'total' => $results->total(),
+                'from' => $results->firstItem(),
+                'to' => $results->lastItem(),
+                'has_more_pages' => $results->hasMorePages(),
+            ]
+        ];
     }
 }

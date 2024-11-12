@@ -4,10 +4,14 @@ namespace App\Services;
 
 use App\Models\Disease;
 use App\Http\Requests\CreateDiseaseRequest;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class DiseaseService
 {
+    private const DEFAULT_PER_PAGE = 10;
+    private const MAX_PER_PAGE = 100;
+
     public function createDisease(array $data): array
     {
         try {
@@ -90,33 +94,14 @@ class DiseaseService
     {
         try {
             $query = Disease::query();
+            
+            $query->withCount('diseaseRecords');
+            
+            $this->applyDiseaseFilters($query, $filters);
+            
+            $paginatedData = $this->paginateResults($query, $filters, 'diseases');
 
-            if (isset($filters['name'])) {
-                $query->where('name', 'like', '%' . $filters['name'] . '%');
-            }
-
-            // Search in schema
-            if (isset($filters['column_type'])) {
-                $query->whereJsonContains('schema->columns', ['type' => $filters['column_type']]);
-            }
-
-            if (isset($filters['column_name'])) {
-                $query->whereJsonContains('schema->columns', ['name' => $filters['column_name']]);
-            }
-
-            $perPage = isset($filters['per_page']) && is_numeric($filters['per_page']) && $filters['per_page'] > 0 
-                ? (int) $filters['per_page'] 
-                : 10;
-
-            $diseases = $query->paginate($perPage);
-
-            return [true, 'Diseases retrieved successfully.', [
-                'diseases' => $diseases->items(),
-                'current_page' => $diseases->currentPage(),
-                'last_page' => $diseases->lastPage(),
-                'per_page' => $diseases->perPage(),
-                'total' => $diseases->total(),
-            ]];
+            return [true, 'Diseases retrieved successfully.', $paginatedData];
         } catch (\Throwable $exception) {
             return [false, 'Failed to retrieve diseases: ' . $exception->getMessage(), []];
         }
@@ -125,12 +110,98 @@ class DiseaseService
     public function getDiseaseDetails($id): array
     {
         try {
-            $disease = Disease::findOrFail($id);
+            $disease = Disease::withCount('diseaseRecords')->findOrFail($id);
             return [true, 'Disease details retrieved successfully.', $disease];
         } catch (\Throwable $exception) {
-            // TO DO logging
             return [false, 'Failed to retrieve disease details: ' . $exception->getMessage(), []];
         }
     }
+    
+    public function getSchemaField(int $diseaseId): array
+    {
+        try {
+            [$success, $message, $disease] = $this->getDiseaseDetails($diseaseId);
+            
+            if (!$success) {
+                return [];
+            }
 
+            $schema = $disease->schema['columns'] ?? null;
+
+            if (!$schema) {
+                return [];
+            }
+
+            $formattedSchema = [];
+            foreach ($schema as $column) {
+                $field = [
+                    'name' => $column['name'] ?? null,
+                    'type' => $column['type'] ?? null,
+                ];
+
+                if ($field['type'] === 'file') {
+                    $field['format'] = $column['format'];
+                }
+
+                $formattedSchema[] = $field;
+            }
+
+            return $formattedSchema;
+        } catch (\Throwable $exception) {
+            return []; 
+        }
+    }
+
+    private function applyDiseaseFilters(Builder $query, array $filters): void
+    {
+        if (!empty($filters['name'])) {
+            $query->where('name', 'like', '%' . trim($filters['name']) . '%');
+        }
+
+        if (!empty($filters['column_type'])) {
+            $query->whereJsonContains('schema->columns', ['type' => $filters['column_type']]);
+        }
+
+        if (!empty($filters['column_name'])) {
+            $query->whereJsonContains('schema->columns', ['name' => $filters['column_name']]);
+        }
+
+        //Sorting
+        $query->orderBy('created_at', 'desc');
+    }
+
+    private function paginateResults(Builder $query, array $filters, string $itemsKey): array
+    {
+        $perPage = isset($filters['per_page']) && 
+                  is_numeric($filters['per_page']) && 
+                  $filters['per_page'] > 0 && 
+                  $filters['per_page'] <= self::MAX_PER_PAGE
+            ? (int) $filters['per_page']
+            : self::DEFAULT_PER_PAGE;
+
+        $page = isset($filters['page']) && 
+                is_numeric($filters['page']) && 
+                $filters['page'] > 0
+            ? (int) $filters['page']
+            : 1;
+
+        $results = $query->paginate($perPage, ['*'], 'page', $page);
+
+        if ($results->isEmpty() && $results->currentPage() > 1) {
+            $results = $query->paginate($perPage, ['*'], 'page', $results->lastPage());
+        }
+
+        return [
+            $itemsKey => $results->items(),
+            'pagination' => [
+                'current_page' => $results->currentPage(),
+                'last_page' => $results->lastPage(),
+                'per_page' => (int) $results->perPage(),
+                'total' => $results->total(),
+                'from' => $results->firstItem(),
+                'to' => $results->lastItem(),
+                'has_more_pages' => $results->hasMorePages(),
+            ]
+        ];
+    }
 }
