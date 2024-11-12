@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             DiseaseSeeder::class,
             DiseaseRecordSeeder::class,
+            AddPrimaryAdmin::class,
             // other seeders here
         ]);
     }

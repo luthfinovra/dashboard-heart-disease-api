@@ -114,11 +114,19 @@ class AdminUserService
     {
         try {
             $user = User::findOrFail($id);
+            if ((int) auth()->id() === (int) $id) {
+                return [false, 'You cannot delete your own account.', []];
+            }
+    
+            if ($user->is_primary_admin) {
+                return [false, 'The primary admin account cannot be deleted.', []];
+            }
+    
             $user->delete();
-
             return [true, 'User deleted successfully.', []];
+            
         } catch (\Throwable $exception) {
-            // TO DO logging
+            // Log the exception
             return [false, 'User deletion failed: ' . $exception->getMessage(), []];
         }
     }
