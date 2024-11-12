@@ -20,12 +20,14 @@ class DiseaseRecordService
     public function createDiseaseRecord(array $data): array
     {
         try {
-            echo($data);
             DB::beginTransaction();
 
+            $diseaseId = $data['diseaseId'];
+            unset($data['diseaseId']);
+    
             $diseaseRecord = DiseaseRecord::create([
-                'disease_id' => $data['diseaseId'],
-                'data' => $data['data'],
+                'disease_id' => $diseaseId,
+                'data' => $data,
             ]);
 
             DB::commit();
@@ -94,10 +96,13 @@ class DiseaseRecordService
         }
     }
 
-    public function getDiseaseRecordDetails($id): array
+    public function getDiseaseRecordDetails($diseaseId, $recordId): array
     {
         try {
-            $record = DiseaseRecord::findOrFail($id);
+            $record = DiseaseRecord::where('disease_id', $diseaseId)
+                ->where('id', $recordId)
+                ->firstOrFail();
+
             return [true, 'Disease record details retrieved successfully.', $record];
         } catch (\Throwable $exception) {
             return [false, 'Failed to retrieve disease record details: ' . $exception->getMessage(), []];

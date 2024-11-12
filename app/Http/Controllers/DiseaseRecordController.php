@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ResponseJson; // Import the ResponseJson helper
 use App\Services\DiseaseRecordService;
 use App\Http\Requests\CreateDiseaseRecordRequest;
+use App\Http\Requests\ShowDiseaseRecordRequest;
 use App\Http\Requests\EditDiseaseRecordRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +21,6 @@ class DiseaseRecordController extends Controller
 
     public function createDiseaseRecord(CreateDiseaseRecordRequest $request): JsonResponse
     {
-        echo($request);
         [$success, $message, $data] = $this->diseaseRecordService->createDiseaseRecord($request->validated());
 
         if (!$success) {
@@ -63,14 +63,14 @@ class DiseaseRecordController extends Controller
         return ResponseJson::successResponse('Disease records retrieved successfully.', $data);
     }
 
-    public function getDiseaseRecordDetails($id): JsonResponse
+    public function getDiseaseRecordDetails(ShowDiseaseRecordRequest $request, $diseaseId, $recordId): JsonResponse
     {
-        [$success, $message, $data] = $this->diseaseRecordService->getDiseaseRecordDetails($id);
+        [$success, $message, $data] = $this->diseaseRecordService->getDiseaseRecordDetails($diseaseId, $recordId);
 
         if (!$success) {
             return ResponseJson::failedResponse($message, $data);
         }
 
-        return ResponseJson::successResponse('Disease record details retrieved successfully.', $data);
+        return ResponseJson::successResponse($message, $data);
     }
 }

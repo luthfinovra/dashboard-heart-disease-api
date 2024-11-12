@@ -51,13 +51,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('diseases/{diseaseId}/records')->group(function () {
         Route::get('/', [DiseaseRecordController::class, 'getDiseaseRecords'])->name('disease_records.index');
         
-        Route::get('/{id}', [DiseaseRecordController::class, 'getDiseaseRecordDetails'])->name('disease_records.show');
+        Route::get('/{recordId}', [DiseaseRecordController::class, 'getDiseaseRecordDetails'])->name('disease_records.show');
 
         Route::middleware(['checkRole:admin,operator'])->post('/', [DiseaseRecordController::class, 'createDiseaseRecord'])->name('disease_records.store');
 
-        Route::middleware(['checkRole:admin,operator'])->put('/{id}', [DiseaseRecordController::class, 'editDiseaseRecord'])->name('disease_records.update');
+        Route::middleware(['checkRole:admin,operator'])->put('/{recordId}', [DiseaseRecordController::class, 'editDiseaseRecord'])->name('disease_records.update');
         
-        Route::middleware(['checkRole:admin'])->delete('/{id}', [DiseaseRecordController::class, 'deleteDiseaseRecord'])->name('disease_records.delete');
+        Route::middleware(['checkRole:admin,operator'])->delete('/{recordId}', [DiseaseRecordController::class, 'deleteDiseaseRecord'])->name('disease_records.delete');
     });
 
     // Operator-only routes

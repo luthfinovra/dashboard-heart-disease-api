@@ -20,7 +20,7 @@ class DiseaseSeeder extends Seeder
                         ["name" => "Jenis", "type" => "enum", "options" => ["Type1", "Type2"]],
                         ["name" => "Signals", "type" => "string"],
                         ["name" => "Durasi", "type" => "decimal"],
-                        ["name" => "Tanggal tes", "type" => "date"],
+                        ["name" => "Tanggal tes", "type" => "datetime"],
                         ["name" => "File Detak jantung", "type" => "file", "format" => ".wav"]
                     ]
                 ],
@@ -36,7 +36,7 @@ class DiseaseSeeder extends Seeder
                         ["name" => "Jenis Kelamin", "type" => "enum", "options" => ["Male", "Female"]],
                         ["name" => "Tanggal lahir", "type" => "date"],
                         ["name" => "Tempat tes", "type" => "string"],
-                        ["name" => "Tanggal tes", "type" => "date"],
+                        ["name" => "Tanggal tes", "type" => "datetime"],
                         ["name" => "Record data", "type" => "file", "format" => ".wav", "multiple" => true]
                     ]
                 ],

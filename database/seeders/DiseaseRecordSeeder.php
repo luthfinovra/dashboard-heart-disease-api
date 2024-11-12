@@ -16,7 +16,7 @@ class DiseaseRecordSeeder extends Seeder
         foreach ($diseases as $disease) {
             $records = [];
 
-            for ($i = 0; $i < 10; $i++) {
+            for ($i = 0; $i < 1000; $i++) {
                 $recordData = match($disease->name) {
                     'Arrhythmia' => [
                         'Record' => 'Record_' . $i,
