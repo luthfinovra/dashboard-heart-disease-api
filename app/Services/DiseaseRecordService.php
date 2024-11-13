@@ -9,12 +9,15 @@ use Illuminate\Database\Eloquent\Builder;
 class DiseaseRecordService
 {
     protected $diseaseService;
+    protected $fileStorage;
+    
     private const DEFAULT_PER_PAGE = 10;
     private const MAX_PER_PAGE = 100;
 
-    public function __construct(DiseaseService $diseaseService)
+    public function __construct(DiseaseService $diseaseService, FileStorageService $fileStorage)
     {
         $this->diseaseService = $diseaseService;
+        $this->fileStorage = $fileStorage;
     }
 
     public function createDiseaseRecord(array $data): array
@@ -42,16 +45,15 @@ class DiseaseRecordService
     {
         try {
             DB::beginTransaction();
-
             $diseaseRecord = DiseaseRecord::find($id);
             if (!$diseaseRecord) {
                 return [false, 'Disease record not found.', []];
             }
-
+            
             $diseaseRecord->update([
                 'data' => $data['data'],
             ]);
-
+            
             DB::commit();
             return [true, 'Disease record updated successfully.', $diseaseRecord->toArray()];
         } catch (\Throwable $exception) {
@@ -59,15 +61,18 @@ class DiseaseRecordService
             return [false, 'Disease record update failed: ' . $exception->getMessage(), []];
         }
     }
-
+    
     public function deleteDiseaseRecord($id): array
     {
         try {
+            DB::beginTransaction();
             $diseaseRecord = DiseaseRecord::findOrFail($id);
             $diseaseRecord->delete();
-
+            
+            DB::commit();
             return [true, 'Disease record deleted successfully.', []];
         } catch (\Throwable $exception) {
+            DB::rollBack();
             return [false, 'Disease record deletion failed: ' . $exception->getMessage(), []];
         }
     }

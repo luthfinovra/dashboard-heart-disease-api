@@ -9,6 +9,7 @@ use App\Http\Requests\EditDiseaseRequest;
 use App\Http\Requests\DiseaseIdRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class DiseaseController extends Controller
 {
@@ -32,6 +33,7 @@ class DiseaseController extends Controller
 
     public function editDisease(EditDiseaseRequest $request, $diseaseId): JsonResponse
     {
+        Log::info('EditDisease Request Data: ', $request->validated());
         [$success, $message, $data] = $this->diseaseService->editDisease($diseaseId, $request->validated());
 
         if(!$success){

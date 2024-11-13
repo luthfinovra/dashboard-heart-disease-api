@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Disease extends Model
 {
@@ -28,5 +29,17 @@ class Disease extends Model
     public function diseaseRecords()
     {
         return $this->hasMany(DiseaseRecord::class);
+    }
+
+    protected function getCoverPageUrlAttribute(): ?string
+    {
+        return $this->cover_page ? Storage::url('/public/' . $this->cover_page) : null;
+    }
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        $array['cover_page_url'] = $this->cover_page_url;
+        return $array;
     }
 }

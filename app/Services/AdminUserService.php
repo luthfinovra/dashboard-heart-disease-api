@@ -45,13 +45,17 @@ class AdminUserService
     public function approveUser($id): array
     {
         try {
+            DB::beginTransaction();
             $user = User::findOrFail($id);
             $user->approval_status = 'approved';
             $user->save();
 
+            DB::commit();
             return [true, 'User approved successfully.', $user];
         } catch (\Throwable $exception) {
             // TO DO logging
+            DB::rollBack();
+
             return [false, 'User approval failed: ' . $exception->getMessage(), []];
         }
     }
@@ -59,13 +63,16 @@ class AdminUserService
     public function rejectUser($id): array
     {
         try {
+            DB::beginTransaction();
             $user = User::findOrFail($id);
             $user->approval_status = 'rejected';
             $user->save();
 
+            DB::commit();
             return [true, 'User rejected successfully.', $user];
         } catch (\Throwable $exception) {
             // TO DO logging
+            DB::rollBack();
             return [false, 'User rejection failed: ' . $exception->getMessage(), []];
         }
     }
@@ -113,6 +120,7 @@ class AdminUserService
     public function deleteUser($id): array
     {
         try {
+            DB::beginTransaction();
             $user = User::findOrFail($id);
             if ((int) auth()->id() === (int) $id) {
                 return [false, 'You cannot delete your own account.', []];
@@ -123,10 +131,12 @@ class AdminUserService
             }
     
             $user->delete();
+
+            DB::commit();
             return [true, 'User deleted successfully.', []];
-            
         } catch (\Throwable $exception) {
             // Log the exception
+            DB::rollBack();
             return [false, 'User deletion failed: ' . $exception->getMessage(), []];
         }
     }
@@ -161,13 +171,16 @@ class AdminUserService
     public function assignOperatorToDiseases(int $userId, array $diseaseIds): array
     {
         try {
+            DB::beginTransaction();
             $user = User::findOrFail($userId);
 
             $user->managedDiseases()->sync($diseaseIds);
 
+            DB::commit();
             return [true, 'Diseases assigned to operator successfully.', $user];
         } catch (\Throwable $exception) {
             // Log exception
+            DB::rollBack();
             return [false, 'Failed to assign diseases to operator: ' . $exception->getMessage(), []];
         }
     }

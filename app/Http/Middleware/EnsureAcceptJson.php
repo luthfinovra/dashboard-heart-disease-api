@@ -10,6 +10,11 @@ class EnsureAcceptJson
 {
     public function handle(Request $request, Closure $next)
     {
+        // var_dump($request->header());
+        if (($request->isMethod('post')||$request->isMethod('put')) && $request->hasHeader('Content-Type', 'multipart/form-data')) {
+            return $next($request);
+        }
+
         $request->headers->set('Accept', 'application/json');
         
         $response = $next($request);

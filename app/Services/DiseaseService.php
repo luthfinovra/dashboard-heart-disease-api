@@ -6,11 +6,20 @@ use App\Models\Disease;
 use App\Http\Requests\CreateDiseaseRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DiseaseService
 {
     private const DEFAULT_PER_PAGE = 10;
     private const MAX_PER_PAGE = 100;
+
+    protected $fileStorage;
+    
+    public function __construct(FileStorageService $fileStorage)
+    {
+        $this->fileStorage = $fileStorage;
+    }
+
 
     public function createDisease(array $data): array
     {
@@ -18,12 +27,13 @@ class DiseaseService
             DB::beginTransaction();
             
             $image_url = null;
-            // if (isset($data['cover_page']) && $data['cover_page']) {
-            //     $file = $data['cover_page'];
-            //     $filename = Str::slug($data['name']) . '-' . time() . '.' . $file->getClientOriginalExtension();
-            //     $path = $file->storeAs('public/diseases/covers', $filename);
-            //     $image_url = Storage::url($path);
-            // }
+            if (isset($data['cover_page']) && $data['cover_page']) {
+                $image_url = $this->fileStorage->storeFile(
+                    $data['cover_page'],
+                    'diseases/covers',
+                    Str::slug($data['name']) . '-' . time() . '.' . $data['cover_page']->getClientOriginalExtension()
+                );
+            }
 
             $disease = Disease::create([
                 'name' => $data['name'],
@@ -44,6 +54,7 @@ class DiseaseService
     public function editDisease($id, array $data): array
     {
         try {
+            // var_dump($data);
             DB::beginTransaction();
 
             $disease = Disease::find($id);
@@ -51,20 +62,17 @@ class DiseaseService
                 return [false, 'Disease not found.', []];
             }
 
-            // if (isset($data['cover_page']) && $data['cover_page']) {
-            //     // Delete old cover if exists
-            //     if ($disease->cover_page) {
-            //         $oldPath = str_replace('/storage', 'public', $disease->cover_page);
-            //         Storage::delete($oldPath);
-            //     }
+            if (isset($data['cover_page']) && $data['cover_page']) {
+                $this->fileStorage->deleteFile($disease->cover_page);
 
-            //     $file = $data['cover_page'];
-            //     $filename = Str::slug($data['name']) . '-' . time() . '.' . $file->getClientOriginalExtension();
-            //     $path = $file->storeAs('public/diseases/covers', $filename);
-            //     $data['cover_page'] = Storage::url($path);
-            // } else {
-            //     unset($data['cover_page']);
-            // }
+                $data['cover_page'] = $this->fileStorage->storeFile(
+                    $data['cover_page'],
+                    'diseases/covers',
+                    Str::slug($data['name']) . '-' . time() . '.' . $data['cover_page']->getClientOriginalExtension()
+                );
+            } else {
+                unset($data['cover_page']);
+            }
 
             $disease->update($data);
 
@@ -80,11 +88,19 @@ class DiseaseService
     public function deleteDisease($id): array
     {
         try {
+            DB::beginTransaction();
             $disease = Disease::findOrFail($id);
+
+            if ($disease->cover_page) {
+                $this->fileStorage->deleteFile($disease->cover_page);
+            }
+
             $disease->delete();
 
+            DB::commit();
             return [true, 'Disease deleted successfully.', []];
         } catch (\Throwable $exception) {
+            DB::rollBack();
             // TO DO logging
             return [false, 'Disease deletion failed: ' . $exception->getMessage(), []];
         }
