@@ -7,6 +7,8 @@ use App\Services\DiseaseRecordService;
 use App\Http\Requests\CreateDiseaseRecordRequest;
 use App\Http\Requests\ShowDiseaseRecordRequest;
 use App\Http\Requests\EditDiseaseRecordRequest;
+use App\Http\Requests\DeleteDiseaseRecordRequest;
+use App\Http\Requests\IndexDiseaseRecordRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -41,27 +43,28 @@ class DiseaseRecordController extends Controller
         return ResponseJson::successResponse('Disease record updated successfully.', $data);
     }
 
-    public function deleteDiseaseRecord($id): JsonResponse
+    public function deleteDiseaseRecord(DeleteDiseaseRecordRequest $request, $diseaseId, $recordId): JsonResponse
     {
-        [$success, $message, $data] = $this->diseaseRecordService->deleteDiseaseRecord($id);
-
+        [$success, $message] = $this->diseaseRecordService->deleteDiseaseRecord($recordId);
+    
         if (!$success) {
-            return ResponseJson::failedResponse($message, $data);
+            return ResponseJson::failedResponse($message);
         }
-
-        return ResponseJson::successResponse('Disease record deleted successfully.', $data);
+    
+        return ResponseJson::successResponse($message);
     }
 
-    public function getDiseaseRecords($diseaseId, Request $request): JsonResponse
+    public function getDiseaseRecords(IndexDiseaseRecordRequest $request, $diseaseId): JsonResponse
     {
         [$success, $message, $data] = $this->diseaseRecordService->getDiseaseRecords($diseaseId, $request->all());
-
+    
         if (!$success) {
             return ResponseJson::failedResponse($message, $data);
         }
-
+    
         return ResponseJson::successResponse('Disease records retrieved successfully.', $data);
     }
+    
 
     public function getDiseaseRecordDetails(ShowDiseaseRecordRequest $request, $diseaseId, $recordId): JsonResponse
     {

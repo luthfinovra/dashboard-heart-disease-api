@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ResponseJson; // Import the ResponseJson helper
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\EditUserRequest;
+use App\Http\Requests\UserIdRequest;
 use App\Services\AdminUserService;
 use App\Services\DiseaseService;
 use Illuminate\Http\Request;
@@ -43,9 +44,9 @@ class AdminUserController extends Controller
         return ResponseJson::successResponse($message, $data);
     }
 
-    public function approveUser($id): JsonResponse
+    public function approveUser(UserIdRequest $request, $userId): JsonResponse
     {
-        [$success, $message, $data] = $this->adminUserService->approveUser($id);
+        [$success, $message, $data] = $this->adminUserService->approveUser($userId);
 
         if(!$success){
             return ResponseJson::failedResponse($message, $data);
@@ -54,9 +55,9 @@ class AdminUserController extends Controller
         return ResponseJson::successResponse('User approved successfully.', $data);
     }
 
-    public function rejectUser($id): JsonResponse
+    public function rejectUser(UserIdRequest $request, $userId): JsonResponse
     {
-        [$success, $message, $data] = $this->adminUserService->rejectUser($id);
+        [$success, $message, $data] = $this->adminUserService->rejectUser($userId);
 
         if(!$success){
             return ResponseJson::failedResponse($message, $data);
@@ -76,9 +77,9 @@ class AdminUserController extends Controller
         return ResponseJson::successResponse('User updated successfully.', $data);
     }
 
-    public function deleteUser($id): JsonResponse
+    public function deleteUser(UserIdRequest $request, $userId): JsonResponse
     {
-        [$success, $message, $data] = $this->adminUserService->deleteUser($id);
+        [$success, $message, $data] = $this->adminUserService->deleteUser($userId);
 
         if(!$success){
             return ResponseJson::failedResponse($message, $data);
@@ -97,9 +98,9 @@ class AdminUserController extends Controller
         return ResponseJson::successResponse('Users retrieved successfully.', $data);
     }
 
-    public function getUserDetails($id): JsonResponse
+    public function getUserDetails(UserIdRequest $request, $userId): JsonResponse
     {
-        [$success, $message, $data] = $this->adminUserService->getUserDetails($id);
+        [$success, $message, $data] = $this->adminUserService->getUserDetails($userId);
 
         if(!$success){
             return ResponseJson::failedResponse($message, $data);

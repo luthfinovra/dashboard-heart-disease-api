@@ -17,6 +17,12 @@ class EditDiseaseRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'diseaseId' => $this->route('diseaseId'),
+        ]);
+    }
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,8 +30,8 @@ class EditDiseaseRequest extends FormRequest
      */
     public function rules(): array
     {
-        // TO DO, still using create disease request templates
         return [
+            'diseaseId' => 'required|integer|exists:diseases,id',
             'name' => 'sometimes|required|string|max:255',
             'deskripsi' => 'sometimes|nullable|string|max:65535',
             //'schema' => 'required|json',

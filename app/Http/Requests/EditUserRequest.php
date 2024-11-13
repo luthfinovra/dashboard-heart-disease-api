@@ -12,7 +12,7 @@ class EditUserRequest extends FormRequest
 {
     public function rules(): array
 {
-    $user = $this->route('id');
+    $user = $this->route('userId');
     $userRecord = User::find($user);
     $userRole = $userRecord ? $userRecord->role : null;
 

@@ -27,36 +27,33 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('users')->group(function(){
             Route::get('/', [AdminUserController::class, 'getUsers'])->name('admin.users.index');
             Route::post('/', [AdminUserController::class, 'createUser'])->name('admin.users.create');
-            Route::post('/approve/{id}', [AdminUserController::class, 'approveUser'])->name('admin.users.approve');
-            Route::post('/reject/{id}', [AdminUserController::class, 'rejectUser'])->name('admin.users.reject');
-            Route::put('/{id}', [AdminUserController::class, 'editUser'])->name('admin.users.edit');
-            Route::delete('/{id}', [AdminUserController::class, 'deleteUser'])->name('admin.users.delete');
-            Route::get('/{id}', [AdminUserController::class, 'getUserDetails'])->name('admin.users.show');
+            Route::post('/approve/{userId}', [AdminUserController::class, 'approveUser'])->name('admin.users.approve');
+            Route::post('/reject/{userId}', [AdminUserController::class, 'rejectUser'])->name('admin.users.reject');
+            Route::put('/{userId}', [AdminUserController::class, 'editUser'])->name('admin.users.edit');
+            Route::delete('/{userId}', [AdminUserController::class, 'deleteUser'])->name('admin.users.delete');
+            Route::get('/{userId}', [AdminUserController::class, 'getUserDetails'])->name('admin.users.show');
         });
     });
 
     // Disease routes
     Route::prefix('diseases')->group(function(){
         Route::get('/', [DiseaseController::class, 'getDiseases'])->name('diseases.index');
-        Route::get('/{id}', [DiseaseController::class, 'getDiseaseDetails'])->name('diseases.show');
+        Route::get('/{diseaseId}', [DiseaseController::class, 'getDiseaseDetails'])->name('diseases.show');
 
         Route::middleware(['checkRole:admin'])->group(function() {
             Route::post('/', [DiseaseController::class, 'createDisease'])->name('diseases.create');
-            Route::put('/{id}', [DiseaseController::class, 'editDisease'])->name('diseases.edit');
-            Route::delete('/{id}', [DiseaseController::class, 'deleteDisease'])->name('diseases.delete');
+            Route::put('/{diseaseId}', [DiseaseController::class, 'editDisease'])->name('diseases.edit');
+            Route::delete('/{diseaseId}', [DiseaseController::class, 'deleteDisease'])->name('diseases.delete');
         });
     });
 
     // Disease Records Routes
     Route::prefix('diseases/{diseaseId}/records')->group(function () {
         Route::get('/', [DiseaseRecordController::class, 'getDiseaseRecords'])->name('disease_records.index');
-        
         Route::get('/{recordId}', [DiseaseRecordController::class, 'getDiseaseRecordDetails'])->name('disease_records.show');
 
         Route::middleware(['checkRole:admin,operator'])->post('/', [DiseaseRecordController::class, 'createDiseaseRecord'])->name('disease_records.store');
-
         Route::middleware(['checkRole:admin,operator'])->put('/{recordId}', [DiseaseRecordController::class, 'editDiseaseRecord'])->name('disease_records.update');
-        
         Route::middleware(['checkRole:admin,operator'])->delete('/{recordId}', [DiseaseRecordController::class, 'deleteDiseaseRecord'])->name('disease_records.delete');
     });
 
@@ -86,3 +83,11 @@ Route::get('/', function () {
         'message' => 'Welcome Home'
     ]);
 })->name('home');
+
+Route::fallback(static function () {
+    return response()->json([
+        'success' => false,
+        'data' => [],
+        'message' => 'Not found'
+    ]);
+});

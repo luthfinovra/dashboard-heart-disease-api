@@ -27,7 +27,7 @@ class DiseaseRecordService
     
             $diseaseRecord = DiseaseRecord::create([
                 'disease_id' => $diseaseId,
-                'data' => $data,
+                'data' => $data['data'],
             ]);
 
             DB::commit();
