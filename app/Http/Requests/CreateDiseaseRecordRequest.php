@@ -66,19 +66,33 @@ class CreateDiseaseRecordRequest extends FormRequest
                             case 'time':
                                 $columnRules[] = 'required|date_format:H:i:s';
                                 break;
-                            // case 'file':
-                            //     $columnRules[] = 'file';
-                            //     // Add format validation if specified
-                            //     if (!empty($column['format'])) {
-                            //         $formats = explode(',', trim($column['format'], '.'));
-                            //         $columnRules[] = 'mimes:' . implode(',', $formats);
-                            //     }
-                            //     // Handle multiple files
-                            //     if (!empty($column['multiple'])) {
-                            //         $columnRules[] = 'array';
-                            //         $columnName .= '.*';
-                            //     }
-                            //     break;
+                            case 'file':
+                                $columnRules[] = 'required';
+                                
+                                if (!empty($column['multiple'])) {
+                                    $rules[$columnName] = 'array';
+                                    
+                                    $fileRules = ['file'];
+                                    
+                                    if (!empty($column['format'])) {
+                                        $formats = explode(',', trim($column['format'], '.'));
+                                        $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
+                                        $fileRules[] = 'mimes:' . implode(',', $formats);
+                                    }
+                                    
+                                    $rules[$columnName . '.*'] = implode('|', $fileRules);
+                                } else {
+                                    $columnRules[] = 'file';
+                                    
+                                    if (!empty($column['format'])) {
+                                        $formats = explode(',', trim($column['format'], '.'));
+                                        $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
+                                        $columnRules[] = 'mimes:' . implode(',', $formats);
+                                    }
+                                    
+                                    $rules[$columnName] = implode('|', $columnRules);
+                                }
+                                break;
                             case 'boolean':
                                 $columnRules[] = 'required|boolean';
                                 break;

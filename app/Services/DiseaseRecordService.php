@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\DiseaseRecord;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class DiseaseRecordService
 {
@@ -27,7 +29,31 @@ class DiseaseRecordService
 
             $diseaseId = $data['diseaseId'];
             unset($data['diseaseId']);
-    
+            
+            foreach ($data['data'] as $key => $value) {
+                if (is_array($value) && $this->isFileArray($value)) {
+                    // Handle multiple files
+                    $fileUrls = [];
+                    foreach ($value as $file) {
+                        if ($file && is_file($file)) {
+                            $fileUrls[] = $this->fileStorage->storeFile(
+                                $file,
+                                'diseases/records/' . $diseaseId,
+                                Str::slug($key) . '-' . time() . '-' . count($fileUrls) . '.' . $file->getClientOriginalExtension()
+                            );
+                        }
+                    }
+                    $data['data'][$key] = $fileUrls;
+                } elseif (is_file($value)) {
+                    // Handle single file
+                    $data['data'][$key] = $this->fileStorage->storeFile(
+                        $value,
+                        'diseases/records/' . $diseaseId,
+                        Str::slug($key) . '-' . time() . '.' . $value->getClientOriginalExtension()
+                    );
+                }
+            }
+
             $diseaseRecord = DiseaseRecord::create([
                 'disease_id' => $diseaseId,
                 'data' => $data['data'],
@@ -41,17 +67,51 @@ class DiseaseRecordService
         }
     }
 
-    public function editDiseaseRecord($id, array $data): array
+    public function editDiseaseRecord($recordId, array $data): array
     {
         try {
             DB::beginTransaction();
-            $diseaseRecord = DiseaseRecord::find($id);
-            if (!$diseaseRecord) {
-                return [false, 'Disease record not found.', []];
-            }
+            $diseaseRecord = DiseaseRecord::findOrFail($recordId);
+            $existingData = $diseaseRecord->data;
             
+            foreach ($data['data'] as $key => $value) {
+                if (is_array($value) && $this->isFileArray($value)) {
+                    $fileUrls = [];
+                    
+                    if (isset($existingData[$key]) && is_array($existingData[$key])) {
+                        foreach ($existingData[$key] as $oldFile) {
+                            $this->fileStorage->deleteFile($oldFile);
+                        }
+                    }
+                    
+                    // Store new files
+                    foreach ($value as $file) {
+                        if ($file && is_file($file)) {
+                            $fileUrls[] = $this->fileStorage->storeFile(
+                                $file,
+                                'diseases/records/' . $diseaseRecord->disease_id,
+                                Str::slug($key) . '-' . time() . '-' . count($fileUrls) . '.' . $file->getClientOriginalExtension()
+                            );
+                        }
+                    }
+                    $existingData[$key] = $fileUrls;
+                    
+                } elseif (is_file($value)) {
+                    if (isset($existingData[$key])) {
+                        $this->fileStorage->deleteFile($existingData[$key]);
+                    }
+                    
+                    $existingData[$key] = $this->fileStorage->storeFile(
+                        $value,
+                        'diseases/records/' . $diseaseRecord->disease_id,
+                        Str::slug($key) . '-' . time() . '.' . $value->getClientOriginalExtension()
+                    );
+                } else {
+                    $existingData[$key] = $value;
+                }
+            }
             $diseaseRecord->update([
-                'data' => $data['data'],
+                'data' => $existingData,
             ]);
             
             DB::commit();
@@ -67,6 +127,17 @@ class DiseaseRecordService
         try {
             DB::beginTransaction();
             $diseaseRecord = DiseaseRecord::findOrFail($id);
+
+            foreach ($diseaseRecord->data as $key => $value) {
+                if (is_array($value)) {
+                    foreach ($value as $filePath) {
+                        $this->fileStorage->deleteFile($filePath);
+                    }
+                } elseif (is_string($value) && file_exists(storage_path("app/public/{$value}"))) {
+                    $this->fileStorage->deleteFile($value);
+                }
+            }
+            
             $diseaseRecord->delete();
             
             DB::commit();
@@ -104,11 +175,22 @@ class DiseaseRecordService
     public function getDiseaseRecordDetails($diseaseId, $recordId): array
     {
         try {
+            $schema = $this->diseaseService->getSchemaField($diseaseId);
+
+            if (empty($schema)) {
+                return [false, 'Schema not found for this disease.', []];
+            }
+
             $record = DiseaseRecord::where('disease_id', $diseaseId)
                 ->where('id', $recordId)
                 ->firstOrFail();
 
-            return [true, 'Disease record details retrieved successfully.', $record];
+            $response = [
+                'schema' => $schema,
+                'record' => $record,
+            ];
+
+            return [true, 'Disease record details retrieved successfully.', $response];
         } catch (\Throwable $exception) {
             return [false, 'Failed to retrieve disease record details: ' . $exception->getMessage(), []];
         }
@@ -156,5 +238,12 @@ class DiseaseRecordService
                 'has_more_pages' => $results->hasMorePages(),
             ]
         ];
+    }
+
+    private function isFileArray(array $value): bool
+    {
+        return count(array_filter($value, function ($item) {
+            return is_object($item) && method_exists($item, 'getClientOriginalExtension');
+        })) > 0;
     }
 }

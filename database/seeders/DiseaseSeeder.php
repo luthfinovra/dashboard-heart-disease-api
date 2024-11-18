@@ -18,13 +18,13 @@ class DiseaseSeeder extends Seeder
                 'deskripsi' => 'A condition where the heart beats with an irregular or abnormal rhythm.',
                 'schema' => [
                     "columns" => [
-                        ["name" => "Record", "type" => "string"],
-                        ["name" => "Annotations", "type" => "string"],
-                        ["name" => "Jenis", "type" => "enum", "options" => ["Type1", "Type2"]],
-                        ["name" => "Signals", "type" => "string"],
-                        ["name" => "Durasi", "type" => "decimal"],
-                        ["name" => "Tanggal tes", "type" => "datetime"],
-                        ["name" => "File Detak jantung", "type" => "file", "format" => ".wav"]
+                        ["name" => "record", "type" => "string"],
+                        ["name" => "annotations", "type" => "string"],
+                        ["name" => "jenis", "type" => "enum", "options" => ["Type1", "Type2"]],
+                        ["name" => "signals", "type" => "string"],
+                        ["name" => "durasi", "type" => "decimal"],
+                        ["name" => "tanggal_tes", "type" => "datetime"],
+                        ["name" => "file_detak_jantung", "type" => "file", "format" => ".wav"]
                     ]
                 ],
                 'cover_page' => $this->copyStockImage('arrythmia.jpg'),
@@ -34,13 +34,13 @@ class DiseaseSeeder extends Seeder
                 'deskripsi' => 'A condition related to heart muscle injury or damage.',
                 'schema' => [
                     "columns" => [
-                        ["name" => "Nama Pasien", "type" => "string"],
-                        ["name" => "Umur", "type" => "integer"],
-                        ["name" => "Jenis Kelamin", "type" => "enum", "options" => ["Male", "Female"]],
-                        ["name" => "Tanggal lahir", "type" => "date"],
-                        ["name" => "Tempat tes", "type" => "string"],
-                        ["name" => "Tanggal tes", "type" => "datetime"],
-                        ["name" => "Record data", "type" => "file", "format" => ".wav", "multiple" => true]
+                        ["name" => "nama_pasien", "type" => "string"],
+                        ["name" => "umur", "type" => "integer"],
+                        ["name" => "jenis_kelamin", "type" => "enum", "options" => ["Male", "Female"]],
+                        ["name" => "tanggal_lahir", "type" => "date"],
+                        ["name" => "tempat_tes", "type" => "string"],
+                        ["name" => "tanggal_tes", "type" => "datetime"],
+                        ["name" => "record_data", "type" => "file", "format" => ".wav", "multiple" => true]
                     ]
                 ],
                 'cover_page' => $this->copyStockImage('myocardial.jpg'),

@@ -33,7 +33,7 @@ class DiseaseController extends Controller
 
     public function editDisease(EditDiseaseRequest $request, $diseaseId): JsonResponse
     {
-        Log::info('EditDisease Request Data: ', $request->validated());
+        // Log::info('EditDisease Request Data: ', $request->validated());
         [$success, $message, $data] = $this->diseaseService->editDisease($diseaseId, $request->validated());
 
         if(!$success){
