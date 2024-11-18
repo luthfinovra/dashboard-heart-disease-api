@@ -20,5 +20,5 @@ Route::fallback(static function () {
         'success' => false,
         'data' => [],
         'message' => 'Not found'
-    ]);
+    ], 404);
 });

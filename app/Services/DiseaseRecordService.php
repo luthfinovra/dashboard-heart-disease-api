@@ -32,25 +32,19 @@ class DiseaseRecordService
             
             foreach ($data['data'] as $key => $value) {
                 if (is_array($value) && $this->isFileArray($value)) {
-                    // Handle multiple files
                     $fileUrls = [];
-                    foreach ($value as $file) {
+                    foreach ($value as $index => $file) {
                         if ($file && is_file($file)) {
-                            $fileUrls[] = $this->fileStorage->storeFile(
-                                $file,
-                                'diseases/records/' . $diseaseId,
-                                Str::slug($key) . '-' . time() . '-' . count($fileUrls) . '.' . $file->getClientOriginalExtension()
+                            $fileUrls[] = $this->fileStorage->storeRecordFile(
+                                $file, 
+                                $diseaseId, 
+                                $key . '-' . ($index + 1)
                             );
                         }
                     }
                     $data['data'][$key] = $fileUrls;
                 } elseif (is_file($value)) {
-                    // Handle single file
-                    $data['data'][$key] = $this->fileStorage->storeFile(
-                        $value,
-                        'diseases/records/' . $diseaseId,
-                        Str::slug($key) . '-' . time() . '.' . $value->getClientOriginalExtension()
-                    );
+                    $data['data'][$key] = $this->fileStorage->storeRecordFile($value, $diseaseId, $key);
                 }
             }
 
@@ -58,6 +52,7 @@ class DiseaseRecordService
                 'disease_id' => $diseaseId,
                 'data' => $data['data'],
             ]);
+
 
             DB::commit();
             return [true, 'Disease record created successfully.', $diseaseRecord->toArray()];
@@ -78,6 +73,7 @@ class DiseaseRecordService
                 if (is_array($value) && $this->isFileArray($value)) {
                     $fileUrls = [];
                     
+                    // Delete old files
                     if (isset($existingData[$key]) && is_array($existingData[$key])) {
                         foreach ($existingData[$key] as $oldFile) {
                             $this->fileStorage->deleteFile($oldFile);
@@ -87,29 +83,32 @@ class DiseaseRecordService
                     // Store new files
                     foreach ($value as $file) {
                         if ($file && is_file($file)) {
-                            $fileUrls[] = $this->fileStorage->storeFile(
+                            $fileUrls[] = $this->fileStorage->storeRecordFile(
                                 $file,
-                                'diseases/records/' . $diseaseRecord->disease_id,
-                                Str::slug($key) . '-' . time() . '-' . count($fileUrls) . '.' . $file->getClientOriginalExtension()
+                                $diseaseRecord->disease_id,
+                                $key
                             );
                         }
                     }
                     $existingData[$key] = $fileUrls;
                     
                 } elseif (is_file($value)) {
+                    // Delete old file
                     if (isset($existingData[$key])) {
                         $this->fileStorage->deleteFile($existingData[$key]);
                     }
                     
-                    $existingData[$key] = $this->fileStorage->storeFile(
+                    // Store new file
+                    $existingData[$key] = $this->fileStorage->storeRecordFile(
                         $value,
-                        'diseases/records/' . $diseaseRecord->disease_id,
-                        Str::slug($key) . '-' . time() . '.' . $value->getClientOriginalExtension()
+                        $diseaseRecord->disease_id,
+                        $key
                     );
                 } else {
                     $existingData[$key] = $value;
                 }
             }
+            
             $diseaseRecord->update([
                 'data' => $existingData,
             ]);

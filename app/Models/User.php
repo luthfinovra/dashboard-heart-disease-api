@@ -58,7 +58,17 @@ class User extends Authenticatable
     public function getManagedDiseasesAttribute()
     {
         if ($this->role === 'operator') {
-            return $this->managedDiseases()->get(['disease_id', 'name'])->toArray();
+            return $this->managedDiseases()
+                ->select(['diseases.id as disease_id', 'diseases.name'])
+                ->get()
+                ->map(function ($disease) {
+                    return [
+                        'disease_id' => $disease->disease_id,
+                        'name' => $disease->name,
+                        'pivot' => $disease->pivot
+                    ];
+                })
+                ->toArray();
         }
         return null;
     }

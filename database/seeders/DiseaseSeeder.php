@@ -1,10 +1,10 @@
 <?php
-
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Disease;
+use Illuminate\Support\Str;
 
 class DiseaseSeeder extends Seeder
 {
@@ -27,7 +27,7 @@ class DiseaseSeeder extends Seeder
                         ["name" => "file_detak_jantung", "type" => "file", "format" => ".wav"]
                     ]
                 ],
-                'cover_page' => $this->copyStockImage('arrythmia.jpg'),
+                'cover_page' => null,
             ],
             [
                 'name' => 'Myocardial',
@@ -43,25 +43,21 @@ class DiseaseSeeder extends Seeder
                         ["name" => "record_data", "type" => "file", "format" => ".wav", "multiple" => true]
                     ]
                 ],
-                'cover_page' => $this->copyStockImage('myocardial.jpg'),
+                'cover_page' => null,
             ]
         ];
 
         foreach ($diseases as $disease) {
-            Disease::create($disease);
+            $createdDisease = Disease::create($disease);
+            
+            $imageName = Str::slug($disease['name']) . '.jpg';
+            $sourcePath = database_path('seeders/images/' . $imageName);
+            
+            if (file_exists($sourcePath)) {
+                $destinationPath = "diseases/covers/disease-{$createdDisease->id}-cover.jpg";
+                Storage::put('public/' . $destinationPath, file_get_contents($sourcePath));
+                $createdDisease->update(['cover_page' => $destinationPath]);
+            }
         }
-    }
-
-    private function copyStockImage($filename)
-    {
-        $sourcePath = database_path('seeders/images/' . $filename);
-        $destinationPath = 'public/diseases/covers/' . $filename;
-
-        if (file_exists($sourcePath)) {
-            Storage::put($destinationPath, file_get_contents($sourcePath));
-            return 'diseases/covers/' . $filename;
-        }
-
-        return null;
     }
 }

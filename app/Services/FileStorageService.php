@@ -1,43 +1,57 @@
 <?php
-
+// app/Services/FileStorageService.php
 namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FileStorageService
 {
-    /**
-     * Store a file and return its relative path
-     */
-    public function storeFile($file, string $directory, ?string $filename = null, bool $isProtected = false): string
+    public function storeFile($file, string $directory, ?string $filename = null, bool $isPublic = false): string
     {
         if (!$filename) {
             $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
         }
         
-        $baseDirectory = $isProtected ? $directory : "public/$directory";
+        $baseDirectory = $isPublic ? "public/$directory" : $directory;
         $path = $file->storeAs($baseDirectory, $filename);
         
-        return $isProtected ? $path : str_replace('public/', '', $path);
+        return $isPublic ? str_replace('public/', '', $path) : $path;
     }
 
-    /**
-     * Delete a file from storage
-     */
-    public function deleteFile(?string $path, bool $isProtected = false): bool
+    public function storeCoverImage($file, int $diseaseId): string
+    {
+        $filename = "disease-{$diseaseId}-cover." . $file->getClientOriginalExtension();
+        return $this->storeFile($file, 'diseases/covers', $filename, true);
+    }
+
+    public function storeRecordFile($file, int $diseaseId, string $fieldName): string
+    {
+        $filename = Str::slug($fieldName) . '-' . time() . '.' . $file->getClientOriginalExtension();
+        return $this->storeFile($file, "diseases/records/$diseaseId", $filename);
+    }
+
+    public function deleteFile(?string $path, bool $isPublic = false): bool
     {
         if (!$path) return true;
         
-        $fullPath = $isProtected ? $path : 'public/' . $path;
+        $fullPath = $isPublic ? 'public/' . $path : $path;
         return Storage::delete($fullPath);
     }
 
-    /**
-     * Get the full path for a file
-     */
-    public function getFullPath(string $path, bool $isProtected = false): string
+    public function streamFile(string $path): ?StreamedResponse
     {
-        return $isProtected ? storage_path('app/' . $path) : Storage::url($path);
+        if (!Storage::exists($path)) {
+            return null;
+        }
+
+        $mime = Storage::mimeType($path);
+        $filename = basename($path);
+
+        return Storage::response($path, $filename, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+        ]);
     }
 }

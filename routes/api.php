@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\DiseaseController;
 use App\Http\Controllers\DiseaseRecordController;
+use App\Http\Controllers\FileController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -35,27 +36,34 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // Disease routes
-    Route::prefix('diseases')->group(function(){
-        Route::get('/', [DiseaseController::class, 'getDiseases'])->name('diseases.index');
-        Route::get('/{diseaseId}', [DiseaseController::class, 'getDiseaseDetails'])->name('diseases.show');
-
+    Route::prefix('diseases')->middleware(['auth:sanctum', 'checkDiseaseAccess'])->group(function() {
+        Route::get('/', [DiseaseController::class, 'getDiseases']);
+        Route::get('/{diseaseId}', [DiseaseController::class, 'getDiseaseDetails']);
+        
+        // Admin-only routes
         Route::middleware(['checkRole:admin'])->group(function() {
-            Route::post('/', [DiseaseController::class, 'createDisease'])->name('diseases.create');
-            Route::put('/{diseaseId}', [DiseaseController::class, 'editDisease'])->name('diseases.edit');
-            Route::delete('/{diseaseId}', [DiseaseController::class, 'deleteDisease'])->name('diseases.delete');
+            Route::post('/', [DiseaseController::class, 'createDisease']);
+            Route::put('/{diseaseId}', [DiseaseController::class, 'editDisease']);
+            Route::delete('/{diseaseId}', [DiseaseController::class, 'deleteDisease']);
+        });
+        
+        // Disease records routes
+        Route::prefix('{diseaseId}/records')->group(function () {
+            Route::get('/', [DiseaseRecordController::class, 'getDiseaseRecords']);
+            Route::get('/{recordId}', [DiseaseRecordController::class, 'getDiseaseRecordDetails']);
+            
+            Route::middleware(['checkRole:admin,operator'])->group(function() {
+                Route::post('/', [DiseaseRecordController::class, 'createDiseaseRecord']);
+                Route::put('/{recordId}', [DiseaseRecordController::class, 'editDiseaseRecord']);
+                Route::delete('/{recordId}', [DiseaseRecordController::class, 'deleteDiseaseRecord']);
+            });
         });
     });
 
-    // Disease Records Routes
-    Route::prefix('diseases/{diseaseId}/records')->group(function () {
-        Route::get('/', [DiseaseRecordController::class, 'getDiseaseRecords'])->name('disease_records.index');
-        Route::get('/{recordId}', [DiseaseRecordController::class, 'getDiseaseRecordDetails'])->name('disease_records.show');
-
-        Route::middleware(['checkRole:admin,operator'])->post('/', [DiseaseRecordController::class, 'createDiseaseRecord'])->name('disease_records.store');
-        Route::middleware(['checkRole:admin,operator'])->put('/{recordId}', [DiseaseRecordController::class, 'editDiseaseRecord'])->name('disease_records.update');
-        Route::middleware(['checkRole:admin,operator'])->delete('/{recordId}', [DiseaseRecordController::class, 'deleteDiseaseRecord'])->name('disease_records.delete');
-    });
+    Route::get('files/records/{path}', [FileController::class, 'downloadRecord'])
+    ->where('path', 'diseases/records/[0-9]+/.*')
+    ->middleware(['auth:sanctum', 'checkDiseaseAccess'])
+    ->name('files.download.record');
 
     // Operator-only routes
     Route::middleware(['checkRole:operator'])->prefix('operator')->group(function () {
@@ -89,5 +97,5 @@ Route::fallback(static function () {
         'success' => false,
         'data' => [],
         'message' => 'Not found'
-    ]);
+    ], 404);
 });

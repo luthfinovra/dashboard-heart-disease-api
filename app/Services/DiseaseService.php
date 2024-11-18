@@ -28,19 +28,24 @@ class DiseaseService
             
             $image_url = null;
             if (isset($data['cover_page']) && $data['cover_page']) {
-                $image_url = $this->fileStorage->storeFile(
-                    $data['cover_page'],
-                    'diseases/covers',
-                    Str::slug($data['name']) . '-' . time() . '.' . $data['cover_page']->getClientOriginalExtension()
-                );
-            }
+                $disease = Disease::create([
+                    'name' => $data['name'],
+                    'deskripsi' => $data['deskripsi'],
+                    'schema' => $data['schema'],
+                    'cover_page' => null,
+                ]);
 
-            $disease = Disease::create([
-                'name' => $data['name'],
-                'deskripsi' => $data['deskripsi'],
-                'schema' => $data['schema'],
-                'cover_page' => $image_url,
-            ]);
+                $image_url = $this->fileStorage->storeCoverImage($data['cover_page'], $disease->id);
+                
+                $disease->update(['cover_page' => $image_url]);
+            } else {
+                $disease = Disease::create([
+                    'name' => $data['name'],
+                    'deskripsi' => $data['deskripsi'],
+                    'schema' => $data['schema'],
+                    'cover_page' => null,
+                ]);
+            }
 
             DB::commit();
             return [true, 'Disease created successfully.', $disease->toArray()];
@@ -63,19 +68,16 @@ class DiseaseService
             }
 
             if (isset($data['cover_page']) && $data['cover_page']) {
-                $this->fileStorage->deleteFile($disease->cover_page);
+                if ($disease->cover_page) {
+                    $this->fileStorage->deleteFile($disease->cover_page, true);
+                }
 
-                $data['cover_page'] = $this->fileStorage->storeFile(
-                    $data['cover_page'],
-                    'diseases/covers',
-                    Str::slug($data['name']) . '-' . time() . '.' . $data['cover_page']->getClientOriginalExtension()
-                );
+                $data['cover_page'] = $this->fileStorage->storeCoverImage($data['cover_page'], $disease->id);
             } else {
                 unset($data['cover_page']);
             }
 
             $disease->update($data);
-
             DB::commit();
             return [true, 'Disease updated successfully.', $disease];
         } catch (\Throwable $exception) {
@@ -92,9 +94,9 @@ class DiseaseService
             $disease = Disease::findOrFail($id);
 
             if ($disease->cover_page) {
-                $this->fileStorage->deleteFile($disease->cover_page);
+                $this->fileStorage->deleteFile($disease->cover_page, true);
             }
-
+            
             $disease->delete();
 
             DB::commit();
