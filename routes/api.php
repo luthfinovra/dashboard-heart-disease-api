@@ -64,7 +64,11 @@ Route::middleware('auth:sanctum')->group(function () {
     ->where('path', 'diseases/records/[0-9]+/.*')
     ->middleware(['auth:sanctum', 'checkDiseaseAccess'])
     ->name('files.download.record');
-    Route::get('/files/records/preview/{path}', [FileController::class, 'previewFile']);
+    
+    Route::get('files/records/preview/{path}', [FileController::class, 'previewFile'])
+    ->where('path', 'diseases/records/[0-9]+/.*')
+    ->middleware(['auth:sanctum', 'checkDiseaseAccess'])
+    ->name('files.records.preview');
 
     // Operator-only routes
     Route::middleware(['checkRole:operator'])->prefix('operator')->group(function () {

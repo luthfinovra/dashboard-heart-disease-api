@@ -20,6 +20,40 @@ class FileController extends Controller
         $this->middleware(['auth:sanctum', 'checkDiseaseAccess']);
     }
 
+    public function previewFile(Request $request, string $path)
+    {
+        try {
+            $path = $this->sanitizePath($path);
+            $storagePath = storage_path('app/public/' . $path);
+
+            if (!file_exists($storagePath)) {
+                Log::error('File not found', ['path' => $path]);
+                abort(404, 'File not found');
+            }
+
+            // Determine MIME type
+            $mimeType = mime_content_type($storagePath);
+
+            // Only allow audio files for preview (extendable later)
+            if (!str_starts_with($mimeType, 'audio/')) {
+                abort(415, 'Unsupported media type for inline preview');
+            }
+
+            // Stream audio file
+            return response()->file($storagePath, [
+                'Content-Type' => $mimeType,
+                'Content-Disposition' => 'inline',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('File preview failed', [
+                'error' => $e->getMessage(),
+                'path' => $path,
+                'user_id' => $request->user()->id ?? null,
+            ]);
+            abort(500, 'Failed to preview file');
+        }
+    }
+
     public function downloadRecord(Request $request, string $path)
     {
         try {
