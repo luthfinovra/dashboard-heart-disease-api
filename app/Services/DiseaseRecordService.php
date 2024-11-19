@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Disease;
 use App\Models\DiseaseRecord;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
@@ -151,6 +152,8 @@ class DiseaseRecordService
     {
         try {
             $schema = $this->diseaseService->getSchemaField($diseaseId);
+
+            $disease = Disease::findOrFail($diseaseId);
             
             if (empty($schema)) {
                 return [false, 'Schema not found for this disease.', []];
@@ -160,6 +163,8 @@ class DiseaseRecordService
             $paginatedData = $this->paginateResults($query, $filters);
 
             $response = [
+                'name' => $disease['name'],
+                'deskripsi' => $disease['deskripsi'],
                 'schema' => $schema,
                 'records' => $paginatedData['records'],
                 'pagination' => $paginatedData['pagination']

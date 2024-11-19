@@ -22,7 +22,7 @@ return new class extends Migration
             $table->enum('gender', ['male', 'female', 'prefer not to say'])->default('prefer not to say')->nullable();
             $table->string('phone_number', 50)->nullable();
             $table->text('tujuan_permohonan')->nullable();
-            $table->enum('role', ['admin', 'operator', 'researcher'])->default('researcher');
+            $table->enum('role', ['admin', 'operator', 'peneliti'])->default('peneliti');
             $table->enum('approval_status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->rememberToken();
             $table->timestamps();

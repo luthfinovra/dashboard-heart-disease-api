@@ -29,8 +29,8 @@ class AdminUserService
                 'phone_number' => $data['phone_number'] ?? null,
             ]);
 
-            if ($user->role === 'operator' && isset($data['disease_ids'])) {
-                $user->managedDiseases()->attach($data['disease_ids']);
+            if ($user->role === 'operator' && isset($data['disease_id'])) {
+                $user->managedDiseases()->attach($data['disease_id']);
             }
 
             DB::commit();
@@ -102,8 +102,9 @@ class AdminUserService
 
             $user->update($data);
 
-            if ($user->role === 'operator' && array_key_exists('disease_ids', $data)) {
-                $user->managedDiseases()->sync($data['disease_ids']);
+            if ($user->role === 'operator' && isset($data['disease_id'])) {
+                // Detach old disease (if any) and attach the new one
+                $user->managedDiseases()->sync([$data['disease_id']]);
             }
 
             DB::commit();

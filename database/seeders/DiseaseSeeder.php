@@ -18,12 +18,12 @@ class DiseaseSeeder extends Seeder
                 'deskripsi' => 'A condition where the heart beats with an irregular or abnormal rhythm.',
                 'schema' => [
                     "columns" => [
-                        ["name" => "record", "type" => "string"],
-                        ["name" => "annotations", "type" => "string"],
-                        ["name" => "jenis", "type" => "enum", "options" => ["Type1", "Type2"]],
-                        ["name" => "signals", "type" => "string"],
-                        ["name" => "durasi", "type" => "decimal"],
-                        ["name" => "tanggal_tes", "type" => "datetime"],
+                        ["name" => "record", "type" => "string", "is_visible" => true],
+                        ["name" => "annotations", "type" => "string", "is_visible" => true],
+                        ["name" => "jenis", "type" => "enum", "options" => ["Type1", "Type2"], "is_visible" => true],
+                        ["name" => "signals", "type" => "string", "is_visible" => true],
+                        ["name" => "durasi", "type" => "decimal", "is_visible" => true],
+                        ["name" => "tanggal_tes", "type" => "datetime", "is_visible" => true],
                         ["name" => "file_detak_jantung", "type" => "file", "format" => ".wav"]
                     ]
                 ],
@@ -34,12 +34,12 @@ class DiseaseSeeder extends Seeder
                 'deskripsi' => 'A condition related to heart muscle injury or damage.',
                 'schema' => [
                     "columns" => [
-                        ["name" => "nama_pasien", "type" => "string"],
-                        ["name" => "umur", "type" => "integer"],
-                        ["name" => "jenis_kelamin", "type" => "enum", "options" => ["Male", "Female"]],
-                        ["name" => "tanggal_lahir", "type" => "date"],
-                        ["name" => "tempat_tes", "type" => "string"],
-                        ["name" => "tanggal_tes", "type" => "datetime"],
+                        ["name" => "nama_pasien", "type" => "string", "is_visible" => true],
+                        ["name" => "umur", "type" => "integer", "is_visible" => true],
+                        ["name" => "jenis_kelamin", "type" => "enum", "options" => ["Male", "Female"], "is_visible" => true],
+                        ["name" => "tanggal_lahir", "type" => "date", "is_visible" => true],
+                        ["name" => "tempat_tes", "type" => "string", "is_visible" => true],
+                        ["name" => "tanggal_tes", "type" => "datetime", "is_visible" => true],
                         ["name" => "record_data", "type" => "file", "format" => ".wav", "multiple" => true]
                     ]
                 ],

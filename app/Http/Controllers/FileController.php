@@ -1,13 +1,14 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Services\FileStorageService;
 use Illuminate\Http\Request;
 use App\Models\DiseaseRecord;
+use App\Models\Disease;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\JsonResponse;
 
 class FileController extends Controller
 {
@@ -21,89 +22,104 @@ class FileController extends Controller
 
     public function downloadRecord(Request $request, string $path)
     {
-        // Sanitize the path to prevent directory traversal
-        $path = $this->sanitizePath($path);
-
-        // Find the record and verify user has access to it
-        $record = DiseaseRecord::whereJsonContains('data', $path)->firstOrFail();
-
-        // Additional permission check for the specific record
-        if (!$this->userCanAccessRecord($request->user(), $record)) {
-            abort(403, 'You do not have permission to access this file.');
-        }
-
-        // Verify file exists and is within allowed directory
-        if (!$this->isFileAccessAllowed($path)) {
-            abort(404, 'File not found or access denied.');
-        }
-
         try {
-            $response = $this->fileStorage->streamFile($path);
+            // Clean up the path to match storage structure
+            $path = $this->sanitizePath($path);
             
-            if (!$response) {
-                abort(404, 'File not found.');
+            // Determine the full storage path
+            $storagePath = storage_path('app/public/' . $path);
+            
+            if (!file_exists($storagePath)) {
+                Log::error('File not found', [
+                    'path' => $path,
+                    'full_path' => $storagePath
+                ]);
+                abort(404, 'File not found');
             }
 
-            // Add security headers
-            return $this->addSecurityHeaders($response);
-            
-        } catch (\Exception $e) {
-            Log::error('File download failed: ' . $e->getMessage(), [
+            // Find record containing this file path
+            $record = $this->findRecordByPath($path);
+            if (!$record) {
+                abort(404, 'Associated record not found');
+            }
+
+            // Log download attempt
+            Log::info('File download initiated', [
                 'path' => $path,
                 'user_id' => $request->user()->id,
+                'disease_id' => $record->disease_id,
                 'record_id' => $record->id
             ]);
-            abort(500, 'Failed to download file.');
+
+            return $this->fileStorage->streamFile('public/' . $path);
+
+        } catch (\Exception $e) {
+            Log::error('File download failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'path' => $path ?? 'undefined',
+                'user_id' => $request->user()->id ?? 'undefined'
+            ]);
+
+            abort(500, 'Failed to download file: ' . $e->getMessage());
         }
     }
 
     private function sanitizePath(string $path): string
     {
-        // Remove any directory traversal attempts
-        $path = str_replace(['../', '..\\'], '', $path);
+        // Remove any directory traversal attempts and extra slashes
+        $path = str_replace(['..', '//'], ['', '/'], $path);
         
-        // Ensure path starts with diseases/records/
-        if (!str_starts_with($path, 'diseases/records/')) {
-            abort(404);
+        // Remove /api/files/records if present at the start
+        $path = preg_replace('/^\/?(api\/files\/records\/)?/', '', $path);
+        
+        return trim($path, '/');
+    }
+
+    private function findRecordByPath(string $path): ?DiseaseRecord
+    {
+        // First find all diseases that have file fields
+        $diseasesWithFiles = Disease::whereRaw("jsonb_path_exists(schema->'columns', 
+            '$.** ? (@.type == \"file\")')")
+            ->get();
+
+        if ($diseasesWithFiles->isEmpty()) {
+            return null;
         }
 
-        return $path;
-    }
-
-    private function isFileAccessAllowed(string $path): bool
-    {
-        // Check if file exists
-        if (!Storage::exists($path)) {
-            return false;
+        // Get all file field names from the schemas
+        $fileFields = [];
+        foreach ($diseasesWithFiles as $disease) {
+            $columns = $disease->schema['columns'] ?? [];
+            foreach ($columns as $column) {
+                if (($column['type'] ?? '') === 'file') {
+                    $fileFields[$disease->id][] = [
+                        'name' => $column['name'],
+                        'multiple' => $column['multiple'] ?? false
+                    ];
+                }
+            }
         }
 
-        // Verify file is in allowed directory
-        $realPath = Storage::path($path);
-        $storagePath = Storage::path('diseases/records');
-
-        // Ensure file is actually within the records directory
-        return str_starts_with($realPath, $storagePath);
-    }
-
-    private function userCanAccessRecord($user, DiseaseRecord $record): bool
-    {
-        // Add your specific access control logic here
-        // For example:
-        return $user->can('view', $record) || 
-               $user->hasRole('admin') || 
-               $record->disease->users->contains($user->id);
-    }
-
-    private function addSecurityHeaders(StreamedResponse $response): StreamedResponse
-    {
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('Content-Security-Policy', "default-src 'none'; sandbox");
-        $response->headers->set('X-Frame-Options', 'DENY');
-        $response->headers->set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
-        $response->headers->set('Pragma', 'no-cache');
-        $response->headers->set('Expires', '0');
-        
-        return $response;
-        
+        // Build query based on discovered file fields
+        return DiseaseRecord::where(function ($query) use ($path, $fileFields) {
+            foreach ($fileFields as $diseaseId => $fields) {
+                foreach ($fields as $field) {
+                    if ($field['multiple']) {
+                        // Handle array fields using ? operator
+                        $query->orWhere(function ($q) use ($path, $diseaseId, $field) {
+                            $q->where('disease_id', $diseaseId)
+                              ->whereRaw("data->? ?? ?", [$field['name'], $path]);
+                        });
+                    } else {
+                        // Handle single file fields
+                        $query->orWhere(function ($q) use ($path, $diseaseId, $field) {
+                            $q->where('disease_id', $diseaseId)
+                              ->whereRaw("data->>? = ?", [$field['name'], $path]);
+                        });
+                    }
+                }
+            }
+        })->first();
     }
 }

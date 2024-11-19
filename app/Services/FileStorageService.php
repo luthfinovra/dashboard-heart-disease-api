@@ -40,18 +40,16 @@ class FileStorageService
         return Storage::delete($fullPath);
     }
 
-    public function streamFile(string $path): ?StreamedResponse
+    public function streamFile(string $filePath): StreamedResponse
     {
-        if (!Storage::exists($path)) {
-            return null;
-        }
-
-        $mime = Storage::mimeType($path);
-        $filename = basename($path);
-
-        return Storage::response($path, $filename, [
-            'Content-Type' => $mime,
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
-        ]);
+        return response()->streamDownload(function () use ($filePath) {
+            $stream = fopen(storage_path('app/' . $filePath), 'rb');
+            if ($stream) {
+                fpassthru($stream);
+                fclose($stream);
+            } else {
+                abort(404, 'File not found');
+            }
+        }, basename($filePath));
     }
 }

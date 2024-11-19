@@ -21,10 +21,10 @@ class RegisterUserRequest extends FormRequest
             'email' => 'required|email|unique:users,email|max:100',
             'password' => 'required|string|min:8|max:64|confirmed',
             //Front end include: 'password_confirmation' field
-            'institution' => 'nullable|string|max:255',
-            'gender' => 'nullable|in:male,female,prefer not to say',
-            'phone_number' => 'nullable|string|max:50',
-            'tujuan_permohonan' => 'nullable|string|max:65535',
+            'institution' => 'required|string|max:255',
+            'gender' => 'required|in:male,female,prefer not to say',
+            'phone_number' => 'required|string|max:50',
+            'tujuan_permohonan' => 'required|string|max:65535',
         ];
     }
 

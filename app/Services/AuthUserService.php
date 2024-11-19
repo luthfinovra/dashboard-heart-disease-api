@@ -26,7 +26,7 @@ class AuthUserService
                 'gender' => $gender,
                 'phone_number' => $phoneNumber,
                 'tujuan_permohonan' => $tujuanPermohonan,
-                'role' => 'researcher',
+                'role' => 'peneliti',
                 'approval_status' => 'pending',
             ]);
 
@@ -41,26 +41,31 @@ class AuthUserService
 
     public function login(string $email, string $password): array
     {
-        try{
+        try {
             $user = User::where('email', $email)->first();
-
+    
             if (!$user || !Hash::check($password, $user->password)) {
                 return [false, 'The provided credentials are incorrect.', []];
             }
-
+    
             $token = $user->createToken('MyApp')->plainTextToken;
-
-            return [true, 'Login successful.', [
-                'token' => $token, 
+    
+            $response = [
+                'token' => $token,
                 'approval_status' => $user->approval_status,
-                'role' => $user->role
-                ]];
-        }catch(\Throwable $exception){
+                'role' => $user->role,
+            ];
+    
+            if ($user->role === 'operator') {
+                $response['disease_id'] = $user->managedDiseases["disease_id"] ?? null;
+            }
+    
+            return [true, 'Login successful.', $response];
+        } catch (\Throwable $exception) {
             // TO DO logging
-            return [false, 'Login Failed: ', []];
+            return [false, 'Login Failed: ' . $exception->getMessage(), []];
         }
     }
-
     public function logout(User $user): void
     {
         $user->tokens()->delete();

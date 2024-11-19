@@ -60,10 +60,11 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    Route::get('files/records/{path}', [FileController::class, 'downloadRecord'])
+    Route::get('files/records/download/{path}', [FileController::class, 'downloadRecord'])
     ->where('path', 'diseases/records/[0-9]+/.*')
     ->middleware(['auth:sanctum', 'checkDiseaseAccess'])
     ->name('files.download.record');
+    Route::get('/files/records/preview/{path}', [FileController::class, 'previewFile']);
 
     // Operator-only routes
     Route::middleware(['checkRole:operator'])->prefix('operator')->group(function () {
@@ -71,7 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     
     // Researcher-only routes
-    Route::middleware(['checkRole:researcher'])->prefix('researcher')->group(function () {
+    Route::middleware(['checkRole:peneliti'])->prefix('researcher')->group(function () {
         Route::get('/data', [AuthController::class, 'researcherData'])->name('researcher.data');
     });
 });

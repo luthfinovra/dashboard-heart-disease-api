@@ -96,7 +96,7 @@ class DiseaseService
             if ($disease->cover_page) {
                 $this->fileStorage->deleteFile($disease->cover_page, true);
             }
-            
+
             $disease->delete();
 
             DB::commit();
@@ -156,11 +156,13 @@ class DiseaseService
                     'name' => $column['name'] ?? null,
                     'type' => $column['type'] ?? null,
                 ];
-
+    
                 if ($field['type'] === 'file') {
                     $field['format'] = $column['format'];
+                } else {
+                    $field['is_visible'] = filter_var($column['is_visible'] ?? false, FILTER_VALIDATE_BOOLEAN);
                 }
-
+    
                 $formattedSchema[] = $field;
             }
 

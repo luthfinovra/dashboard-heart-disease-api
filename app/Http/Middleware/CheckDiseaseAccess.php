@@ -21,7 +21,7 @@ class CheckDiseaseAccess
             return $next($request);
         }
 
-        if (($user->role ===  'researcher') && $user->status === 'approved') {
+        if (($user->role === 'peneliti') && $user->approval_status === 'approved') {
             return $next($request);
         }
 

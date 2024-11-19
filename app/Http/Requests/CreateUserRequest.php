@@ -17,13 +17,12 @@ class CreateUserRequest extends FormRequest
             'email' => 'required|email|unique:users,email|max:100',
             'password' => 'required|string|min:8|max:64|confirmed',
             // Front end add 'password_confirmation' field
-            'role' => 'required|in:admin,operator,researcher',
+            'role' => 'required|in:admin,operator,peneliti',
             'institution' => 'nullable|string|max:255',
             'gender' => 'nullable|in:male,female,prefer not to say',
             'phone_number' => 'nullable|string|max:50',
             'tujuan_permohonan' => 'nullable|string|max:65535',
-            'disease_ids' => 'required_if:role,operator|array',
-            'disease_ids.*' => 'exists:diseases,id'
+            'disease_id' => 'required_if:role,operator|integer|exists:diseases,id'
         ];
     }
 
@@ -46,9 +45,9 @@ class CreateUserRequest extends FormRequest
             'gender.in' => 'Gender tidak sesuai.',
             'phone_number.max' => 'Nomor telepon maksimal 50 karakter.',
             'tujuan_permohonan.max' => 'Tujuan permohonan maksimal 65535 karakter',
-            'disease_ids.required_if' => 'Disease IDs harus diisi jika role adalah operator.',
-            'disease_ids.array' => 'Disease IDs harus berupa array.',
-            'disease_ids.*.exists' => 'Setiap Disease ID yang dipilih harus valid dan ada dalam database.',
+            'disease_id.required_if' => 'Disease IDs harus diisi jika role adalah operator.',
+            'disease_id.integer' => 'Disease IDs harus berupa integer.',
+            'disease_id.*.exists' => 'Setiap Disease ID yang dipilih harus valid dan ada dalam database.',
         ];
     }
 

@@ -20,13 +20,12 @@ class EditUserRequest extends FormRequest
         'name' => 'sometimes|required|string|max:100',
         'email' => 'sometimes|nullable|email|unique:users,email,' . $user . '|max:100',
         'password' => 'sometimes|nullable|string|min:8|max:64|confirmed',
-        'role' => 'sometimes|required|in:admin,operator,researcher',
+        'role' => 'sometimes|required|in:admin,operator,peneliti',
         'institution' => 'nullable|string|max:255',
         'gender' => 'nullable|in:male,female,prefer not to say',
         'phone_number' => 'nullable|string|max:50',
-        'approval_status' => 'sometimes|required|in:approved,pending,rejected',
-        'disease_ids' => $userRole === 'operator' ? 'sometimes|nullable|array' : 'nullable',
-        'disease_ids.*' => $userRole === 'operator' ? 'exists:diseases,id' : 'nullable',
+        'approval_status' => 'sometimes|in:approved,pending,rejected',
+        'disease_id' => 'sometimes|integer|exists:diseases,id|required_if:role,operator'
     ];
 }
 
@@ -48,8 +47,9 @@ public function messages()
         'phone_number.max' => 'Nomor telepon maksimal 50 karakter.',
         'approval_status.required' => 'Status Approval harus diisi.',
         'approval_status.in' => 'Status Approval tidak sesuai.',
-        'disease_ids.array' => 'Managed diseases harus berupa array',
-        'disease_ids.*.exists' => 'Setiap Disease ID yang dipilih harus valid dan ada dalam database.',
+        'disease_id.required_if' => 'Disease IDs harus diisi jika role adalah operator.',
+        'disease_id.integer' => 'Disease IDs harus berupa integer.',
+        'disease_id.*.exists' => 'Setiap Disease ID yang dipilih harus valid dan ada dalam database.',
     ];
 }
 

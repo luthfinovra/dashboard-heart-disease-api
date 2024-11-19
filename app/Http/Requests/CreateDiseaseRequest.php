@@ -31,6 +31,7 @@ class CreateDiseaseRequest extends FormRequest
             'schema.columns.*.options' => 'required_if:schema.columns.*.type,enum|array',
             'schema.columns.*.format' => 'required_if:schema.columns.*.type,file|string',
             'schema.columns.*.multiple' => 'boolean|nullable',
+            'schema.columns.*.is_visible' => 'boolean|nullable',
             //'schema.columns.*.required' => 'boolean|nullable',
             //'schema.columns.*.min' => 'numeric|nullable',
             //'schema.columns.*.max' => 'numeric|nullable',
