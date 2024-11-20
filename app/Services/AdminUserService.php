@@ -34,10 +34,33 @@ class AdminUserService
             }
 
             DB::commit();
+
+            LogActionService::logAction(
+                auth()->id(),
+                'create',
+                'User',
+                $user->id,
+                $user->toArray(),
+                "Created user: {$user->name}",
+                true
+            );
             return [true, 'User created successfully.', $user->toArray()];
         } catch (\Throwable $exception) {
             DB::rollBack();
-            // TO DO logging
+            
+            LogActionService::logAction(
+                auth()->id(),
+                'create',
+                'User',
+                null,
+                [
+                    'name' => $data['name'] ?? null,
+                    'email' => $data['email'] ?? null,
+                    'error' => $exception->getMessage()
+                ],
+                "Failed to create user: {$exception->getMessage()}",
+                false
+            );
             return [false, 'User creation failed: ' . $exception->getMessage(), []];
         }
     }
@@ -46,15 +69,52 @@ class AdminUserService
     {
         try {
             DB::beginTransaction();
-            $user = User::findOrFail($id);
+            $user = User::find($id);
+            if (!$user) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    $user,
+                    'edit',
+                    'User',
+                    $id,
+                    ['error' => 'User not found'],
+                    "Failed to approve User: User not found",
+                    false
+                );
+                return [false, 'User not found.', []];
+            }
+
+            $oldStatus = $user->approval_status;
             $user->approval_status = 'approved';
             $user->save();
 
             DB::commit();
+
+            LogActionService::logAction(
+                auth()->id(),
+                'edit',
+                'User',
+                $user->id,
+                [
+                    'old_status' => $oldStatus,
+                    'new_status' => 'approved'
+                ],
+                "Approved user: {$user->name}",
+                true
+            );
             return [true, 'User approved successfully.', $user];
         } catch (\Throwable $exception) {
-            // TO DO logging
             DB::rollBack();
+
+            LogActionService::logAction(
+                auth()->id(),
+                'edit',
+                'User',
+                $id,
+                ['error' => $exception->getMessage()],
+                "Failed to approve user: {$exception->getMessage()}",
+                false
+            );
 
             return [false, 'User approval failed: ' . $exception->getMessage(), []];
         }
@@ -64,15 +124,52 @@ class AdminUserService
     {
         try {
             DB::beginTransaction();
-            $user = User::findOrFail($id);
+            $user = User::find($id);
+            if (!$user) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    $user,
+                    'edit',
+                    'User',
+                    $id,
+                    ['error' => 'User not found'],
+                    "Failed to reject User: User not found",
+                    false
+                );
+                return [false, 'User not found.', []];
+            }
+
+            $oldStatus = $user->approval_status;
             $user->approval_status = 'rejected';
             $user->save();
 
             DB::commit();
+
+            LogActionService::logAction(
+                auth()->id(),
+                'edit',
+                'User',
+                $user->id,
+                [
+                    'old_status' => $oldStatus,
+                    'new_status' => 'rejected'
+                ],
+                "Rejected user: {$user->name}",
+                true
+            );
             return [true, 'User rejected successfully.', $user];
         } catch (\Throwable $exception) {
-            // TO DO logging
             DB::rollBack();
+
+            LogActionService::logAction(
+                auth()->id(),
+                'edit',
+                'User',
+                $id,
+                ['error' => $exception->getMessage()],
+                "Failed to reject user: {$exception->getMessage()}",
+                false
+            );
             return [false, 'User rejection failed: ' . $exception->getMessage(), []];
         }
     }
@@ -84,8 +181,33 @@ class AdminUserService
 
             $user = User::find($id);
             if (!$user) {
+                DB::rollBack();
+                LogActionService::logAction(
+                        auth()->id(),
+                        'edit',
+                        'User',
+                        $id,
+                        ['error' => 'User not found'],
+                        "Failed to edit user: User not found",
+                        false
+                    );
                 return [false, 'User not found.', []];
             }
+            if (($user->is_primary_admin)) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    auth()->id(),
+                    'edit',
+                    'User',
+                    $id,
+                    ['error' => 'Attempted to edit primary admin account'],
+                    "Failed to edit user: Cannot edit primary admin account",
+                    false
+                );
+                return [false, 'The primary admin account cannot be edited.', []];
+            }
+
+            $oldData = $user->toArray();
 
             if (isset($data['password']) && $data['password']) {
                 $data['password'] = Hash::make($data['password']);
@@ -100,18 +222,51 @@ class AdminUserService
                 }
             }
 
+            $changedFields = array_keys(array_diff_assoc($data, $oldData));
+            
+            // Get only the values that are actually changing
+            
             $user->update($data);
-
+            
             if ($user->role === 'operator' && isset($data['disease_id'])) {
                 // Detach old disease (if any) and attach the new one
                 $user->managedDiseases()->sync([$data['disease_id']]);
             }
-
+            
+            $relevantOldData = array_intersect_key($oldData, $data);
+            $relevantNewData = array_intersect_key($data, $oldData);
+            
             DB::commit();
+
+            LogActionService::logAction(
+                auth()->id(),
+                'edit',
+                'User',
+                $user->id,
+                [
+                    'old' => $relevantOldData,
+                    'new' => $relevantNewData,
+                    'changed_fields' => $changedFields
+                ],
+                "Updated user: {$user->name}",
+                true
+            );
             return [true, 'User updated successfully.', $user];
         } catch (\Throwable $exception) {
             DB::rollBack();
-            // TO DO: Add logging here
+            
+            LogActionService::logAction(
+                auth()->id(),
+                'edit',
+                'User',
+                $id,
+                [
+                    'attempted_changes' => array_keys($data),
+                    'error' => $exception->getMessage()
+                ],
+                "Failed to update user: {$exception->getMessage()}",
+                false
+            );
             return [false, 'User update failed: ' . $exception->getMessage(), []];
         }
     }
@@ -122,22 +277,81 @@ class AdminUserService
     {
         try {
             DB::beginTransaction();
-            $user = User::findOrFail($id);
+            $user = User::find($id);
+            if (!$user) {
+                DB::rollBack();
+                LogActionService::logAction(
+                        auth()->id(),
+                        'delete',
+                        'User',
+                        $id,
+                        ['error' => 'User not found'],
+                        "Failed to delete user: User not found",
+                        false
+                    );
+                return [false, 'User not found.', []];
+            }
+
             if ((int) auth()->id() === (int) $id) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    auth()->id(),
+                    'delete',
+                    'User',
+                    $id,
+                    ['error' => 'Attempted to delete own account'],
+                    "Failed to delete user: Cannot delete own account",
+                    false
+                );
                 return [false, 'You cannot delete your own account.', []];
             }
     
             if ($user->is_primary_admin) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    auth()->id(),
+                    'delete',
+                    'User',
+                    $id,
+                    ['error' => 'Attempted to delete primary admin account'],
+                    "Failed to delete user: Cannot delete primary admin account",
+                    false
+                );
                 return [false, 'The primary admin account cannot be deleted.', []];
             }
-    
+
+            $userInfo = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role
+            ];
+
             $user->delete();
 
             DB::commit();
+
+            LogActionService::logAction(
+                auth()->id(),
+                'delete',
+                'User',
+                $id,
+                $userInfo,
+                "Deleted user: {$user->name}",
+                true
+            );
             return [true, 'User deleted successfully.', []];
         } catch (\Throwable $exception) {
-            // Log the exception
             DB::rollBack();
+
+            LogActionService::logAction(
+                auth()->id(),
+                'delete',
+                'User',
+                $id,
+                ['error' => $exception->getMessage()],
+                "Failed to delete user: {$exception->getMessage()}",
+                false
+            );
             return [false, 'User deletion failed: ' . $exception->getMessage(), []];
         }
     }

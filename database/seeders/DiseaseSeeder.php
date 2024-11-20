@@ -20,7 +20,7 @@ class DiseaseSeeder extends Seeder
                     "columns" => [
                         ["name" => "record", "type" => "string", "is_visible" => true],
                         ["name" => "annotations", "type" => "string", "is_visible" => true],
-                        ["name" => "jenis", "type" => "enum", "options" => ["Type1", "Type2"], "is_visible" => true],
+                        ["name" => "jenis", "type" => "string", /*"options" => ["Type1", "Type2"]*/ "is_visible" => true],
                         ["name" => "signals", "type" => "string", "is_visible" => true],
                         ["name" => "durasi", "type" => "decimal", "is_visible" => true],
                         ["name" => "tanggal_tes", "type" => "datetime", "is_visible" => true],
@@ -36,7 +36,7 @@ class DiseaseSeeder extends Seeder
                     "columns" => [
                         ["name" => "nama_pasien", "type" => "string", "is_visible" => true],
                         ["name" => "umur", "type" => "integer", "is_visible" => true],
-                        ["name" => "jenis_kelamin", "type" => "enum", "options" => ["Male", "Female"], "is_visible" => true],
+                        ["name" => "jenis_kelamin", "type" => "string", /*"options" => ["Male", "Female"]*/ "is_visible" => true],
                         ["name" => "tanggal_lahir", "type" => "date", "is_visible" => true],
                         ["name" => "tempat_tes", "type" => "string", "is_visible" => true],
                         ["name" => "tanggal_tes", "type" => "datetime", "is_visible" => true],

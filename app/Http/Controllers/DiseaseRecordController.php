@@ -26,7 +26,8 @@ class DiseaseRecordController extends Controller
     {
         //var_dump($request->all());
         // return ResponseJson::failedResponse("tez", []);
-        [$success, $message, $data] = $this->diseaseRecordService->createDiseaseRecord($request->validated());
+        $userId = $request->user()->id;
+        [$success, $message, $data] = $this->diseaseRecordService->createDiseaseRecord($request->validated(), $userId);
 
         if (!$success) {
             return ResponseJson::failedResponse($message, $data);
@@ -37,7 +38,8 @@ class DiseaseRecordController extends Controller
 
     public function editDiseaseRecord(EditDiseaseRecordRequest $request, $diseaseId, $recordId): JsonResponse
     {
-        [$success, $message, $data] = $this->diseaseRecordService->editDiseaseRecord($recordId, $request->validated());
+        $userId = $request->user()->id;
+        [$success, $message, $data] = $this->diseaseRecordService->editDiseaseRecord($recordId, $request->validated(), $userId);
 
         if (!$success) {
             return ResponseJson::failedResponse($message, $data);
@@ -48,7 +50,8 @@ class DiseaseRecordController extends Controller
 
     public function deleteDiseaseRecord(DeleteDiseaseRecordRequest $request, $diseaseId, $recordId): JsonResponse
     {
-        [$success, $message] = $this->diseaseRecordService->deleteDiseaseRecord($recordId);
+        $userId = $request->user()->id;
+        [$success, $message] = $this->diseaseRecordService->deleteDiseaseRecord($recordId, $userId);
     
         if (!$success) {
             return ResponseJson::failedResponse($message);

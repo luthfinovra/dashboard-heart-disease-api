@@ -33,6 +33,32 @@ class CreateDiseaseRecordRequest extends FormRequest
      */
     public function rules(): array
     {
+
+        $mimeTypeMap = [
+            'audio' => [
+                'audio/aac', 'audio/midi', 'audio/mp3', 'audio/ogg', 
+                'audio/wav', 'audio/webm', 'audio/x-wav', 'audio/x-mpeg'
+            ],
+            'video' => [
+                'video/mp4', 'video/avi', 'video/mkv', 'video/webm', 
+                'video/ogg', 'video/3gpp', 'video/x-flv', 'video/x-msvideo'
+            ],
+            'image' => [
+                'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 
+                'image/webp', 'image/tiff', 'image/svg+xml', 'image/heif', 'image/heic'
+            ],
+            'text-document' => [
+                'application/pdf', 'application/msword', 'application/xml', 'application/json'
+            ],
+            'compressed-document' => [
+                'application/zip', 'application/x-7z-compressed', 'text/html', 'text/xml'
+            ],
+            'spreadsheet' => [
+                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv', 
+            ],
+        ];
+        
+        
         $rules = [
             'diseaseId' => 'required|integer|exists:diseases,id',
         ];
@@ -74,21 +100,21 @@ class CreateDiseaseRecordRequest extends FormRequest
                                     
                                     $fileRules = ['file'];
                                     
-                                    if (!empty($column['format'])) {
-                                        $formats = explode(',', trim($column['format'], '.'));
-                                        $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
-                                        $fileRules[] = 'mimes:' . implode(',', $formats);
-                                    }
+                                    // if (!empty($column['format'])) {
+                                    //     $formats = explode(',', trim($column['format'], '.'));
+                                    //     $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
+                                    //     $fileRules[] = 'mimes:' . implode(',', $formats);
+                                    // }
                                     
                                     $rules[$columnName . '.*'] = implode('|', $fileRules);
                                 } else {
                                     $columnRules[] = 'file';
                                     
-                                    if (!empty($column['format'])) {
-                                        $formats = explode(',', trim($column['format'], '.'));
-                                        $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
-                                        $columnRules[] = 'mimes:' . implode(',', $formats);
-                                    }
+                                    // if (!empty($column['format'])) {
+                                    //     $formats = explode(',', trim($column['format'], '.'));
+                                    //     $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
+                                    //     $columnRules[] = 'mimes:' . implode(',', $formats);
+                                    // }
                                     
                                     $rules[$columnName] = implode('|', $columnRules);
                                 }

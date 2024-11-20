@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Services\LogActionService;
 
 class DiseaseRecordService
 {
@@ -23,7 +24,7 @@ class DiseaseRecordService
         $this->fileStorage = $fileStorage;
     }
 
-    public function createDiseaseRecord(array $data): array
+    public function createDiseaseRecord(array $data, $userId): array
     {
         try {
             DB::beginTransaction();
@@ -56,18 +57,55 @@ class DiseaseRecordService
 
 
             DB::commit();
+
+            LogActionService::logAction(
+                $userId,
+                'create',
+                'DiseaseRecord',
+                $diseaseRecord->id,
+                $diseaseRecord->toArray(),
+                "Created disease record for disease ID: {$diseaseId}",
+                true
+            );
             return [true, 'Disease record created successfully.', $diseaseRecord->toArray()];
         } catch (\Throwable $exception) {
             DB::rollBack();
+
+            LogActionService::logAction(
+                $userId,
+                'create',
+                'DiseaseRecord',
+                null,
+                [
+                    'disease_id' => $diseaseId ?? null,
+                    'error' => $exception->getMessage()
+                ],
+                "Failed to create disease record: {$exception->getMessage()}",
+                false
+            );
             return [false, 'Disease record creation failed: ' . $exception->getMessage(), []];
         }
     }
 
-    public function editDiseaseRecord($recordId, array $data): array
+    public function editDiseaseRecord($recordId, array $data, $userId): array
     {
         try {
             DB::beginTransaction();
-            $diseaseRecord = DiseaseRecord::findOrFail($recordId);
+            $diseaseRecord = DiseaseRecord::find($recordId);
+            if (!$diseaseRecord) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    $userId,
+                    'delete',
+                    'Disease',
+                    $recordId,
+                    ['error' => 'Disease Record not found'],
+                    "Failed to delete disease record: Disease Record not found",
+                    false
+                );
+                return [false, 'Disease Record not found.', []];
+            }
+            $oldData = $diseaseRecord->toArray();
             $existingData = $diseaseRecord->data;
             
             foreach ($data['data'] as $key => $value) {
@@ -115,18 +153,70 @@ class DiseaseRecordService
             ]);
             
             DB::commit();
+
+            LogActionService::logAction(
+                $userId,
+                'edit',
+                'DiseaseRecord',
+                $diseaseRecord->id,
+                [
+                    'old' => $oldData,
+                    'new' => $diseaseRecord->toArray(),
+                    'changed_fields' => array_keys($data['data'])
+                ],
+                "Updated disease record ID: {$recordId}",
+                true
+            );
             return [true, 'Disease record updated successfully.', $diseaseRecord->toArray()];
         } catch (\Throwable $exception) {
             DB::rollBack();
+
+            LogActionService::logAction(
+                $userId,
+                'edit',
+                'DiseaseRecord',
+                $recordId,
+                [
+                    'attempted_changes' => array_keys($data['data']),
+                    'error' => $exception->getMessage()
+                ],
+                "Failed to update disease record: {$exception->getMessage()}",
+                false
+            );
+    
             return [false, 'Disease record update failed: ' . $exception->getMessage(), []];
         }
     }
     
-    public function deleteDiseaseRecord($id): array
+    public function deleteDiseaseRecord($recordId, $userId): array
     {
         try {
             DB::beginTransaction();
-            $diseaseRecord = DiseaseRecord::findOrFail($id);
+            $diseaseRecord = DiseaseRecord::find($recordId);
+            if (!$diseaseRecord) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    $userId,
+                    'delete',
+                    'Disease',
+                    $recordId,
+                    ['error' => 'Disease Record not found'],
+                    "Failed to delete disease record: Disease Record not found",
+                    false
+                );
+                return [false, 'Disease Record not found.', []];
+            }
+
+            $recordInfo = [
+                'disease_id' => $diseaseRecord->disease_id,
+                'data_fields' => array_keys($diseaseRecord->data),
+                'file_count' => collect($diseaseRecord->data)
+                    ->flatten()
+                    ->filter(function($value) {
+                        return is_string($value) && file_exists(storage_path("app/public/{$value}"));
+                    })
+                    ->count()
+            ];
 
             foreach ($diseaseRecord->data as $key => $value) {
                 if (is_array($value)) {
@@ -141,9 +231,30 @@ class DiseaseRecordService
             $diseaseRecord->delete();
             
             DB::commit();
+
+            LogActionService::logAction(
+                $userId,
+                'delete',
+                'DiseaseRecord',
+                $recordId,
+                $recordInfo,
+                "Deleted disease record ID: {$recordId}",
+                true
+            );
             return [true, 'Disease record deleted successfully.', []];
         } catch (\Throwable $exception) {
             DB::rollBack();
+
+            LogActionService::logAction(
+                $userId,
+                'delete',
+                'DiseaseRecord',
+                $recordId,
+                ['error' => $exception->getMessage()],
+                "Failed to delete disease record: {$exception->getMessage()}",
+                false
+            );
+    
             return [false, 'Disease record deletion failed: ' . $exception->getMessage(), []];
         }
     }

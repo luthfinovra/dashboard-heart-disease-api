@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\DiseaseController;
 use App\Http\Controllers\DiseaseRecordController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\LogActionController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -34,18 +35,22 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{userId}', [AdminUserController::class, 'deleteUser'])->name('admin.users.delete');
             Route::get('/{userId}', [AdminUserController::class, 'getUserDetails'])->name('admin.users.show');
         });
+
+        Route::get('/logs', [LogActionController::class, 'getLogActions'])->name('admin.logs.index');
     });
 
     Route::prefix('diseases')->middleware(['auth:sanctum', 'checkDiseaseAccess'])->group(function() {
         Route::get('/', [DiseaseController::class, 'getDiseases']);
-        Route::get('/{diseaseId}', [DiseaseController::class, 'getDiseaseDetails']);
         
         // Admin-only routes
         Route::middleware(['checkRole:admin'])->group(function() {
+            Route::get('/stats', [DiseaseController::class, 'getStatistics']);
             Route::post('/', [DiseaseController::class, 'createDisease']);
             Route::put('/{diseaseId}', [DiseaseController::class, 'editDisease']);
             Route::delete('/{diseaseId}', [DiseaseController::class, 'deleteDisease']);
         });
+
+        Route::get('/{diseaseId}', [DiseaseController::class, 'getDiseaseDetails']);
         
         // Disease records routes
         Route::prefix('{diseaseId}/records')->group(function () {
@@ -59,6 +64,8 @@ Route::middleware('auth:sanctum')->group(function () {
             });
         });
     });
+
+
 
     Route::get('files/records/download/{path}', [FileController::class, 'downloadRecord'])
     ->where('path', 'diseases/records/[0-9]+/.*')

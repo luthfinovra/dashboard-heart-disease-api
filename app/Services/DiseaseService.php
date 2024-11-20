@@ -7,6 +7,7 @@ use App\Http\Requests\CreateDiseaseRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\LogActionService;
 
 class DiseaseService
 {
@@ -21,7 +22,7 @@ class DiseaseService
     }
 
 
-    public function createDisease(array $data): array
+    public function createDisease(array $data, $userId): array
     {
         try {
             DB::beginTransaction();
@@ -48,15 +49,39 @@ class DiseaseService
             }
 
             DB::commit();
+
+            LogActionService::logAction(
+                $userId,
+                'create',
+                'Disease',
+                $disease->id,
+                $disease->toArray(),
+                "Created disease: {$disease->name}",
+                true
+            );
+
             return [true, 'Disease created successfully.', $disease->toArray()];
         } catch (\Throwable $exception) {
             DB::rollBack();
-            // TO DO logging
+            
+            LogActionService::logAction(
+                $userId,
+                'create',
+                'Disease',
+                null,
+                [
+                    'name' => $data['name'] ?? null,
+                    'error' => $exception->getMessage()
+                ],
+                "Failed to create disease: {$exception->getMessage()}",
+                false
+            );
+
             return [false, 'Disease creation failed: ' . $exception->getMessage(), []];
         }
     }
 
-    public function editDisease($id, array $data): array
+    public function editDisease($id, array $data, $userId): array
     {
         try {
             // var_dump($data);
@@ -64,8 +89,20 @@ class DiseaseService
 
             $disease = Disease::find($id);
             if (!$disease) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    $userId,
+                    'edit',
+                    'Disease',
+                    $id,
+                    ['error' => 'Disease not found'],
+                    "Failed to edit disease: Disease not found",
+                    false
+                );
                 return [false, 'Disease not found.', []];
             }
+
+            $oldData = $disease->toArray();
 
             if (isset($data['cover_page']) && $data['cover_page']) {
                 if ($disease->cover_page) {
@@ -77,21 +114,74 @@ class DiseaseService
                 unset($data['cover_page']);
             }
 
+            $changedFields = array_keys(array_diff_assoc($data, $oldData));
+            
+            // Get only the values that are actually changing
+            $relevantOldData = array_intersect_key($oldData, $data);
+            $relevantNewData = array_intersect_key($data, $oldData);
+
             $disease->update($data);
             DB::commit();
+
+            LogActionService::logAction(
+                $userId,
+                'edit',
+                'Disease',
+                $disease->id,
+                [
+                    'old' => $relevantOldData,
+                    'new' => $relevantNewData,
+                    'changed_fields' => $changedFields
+                ],
+                "Updated disease: {$disease->name}",
+                true
+            );
+
             return [true, 'Disease updated successfully.', $disease];
         } catch (\Throwable $exception) {
             DB::rollBack();
+
+            LogActionService::logAction(
+                $userId,
+                'edit',
+                'Disease',
+                $id,
+                [
+                    'attempted_changes' => array_keys($data),
+                    'error' => $exception->getMessage()
+                ],
+                "Failed to update disease: {$exception->getMessage()}",
+                false
+            );
             return [false, 'Disease update failed: ' . $exception->getMessage(), []];
         }
     }
 
 
-    public function deleteDisease($id): array
+    public function deleteDisease($id, $userId): array
     {
         try {
             DB::beginTransaction();
-            $disease = Disease::findOrFail($id);
+            $disease = Disease::find($id);
+            if (!$disease) {
+                DB::rollBack();
+                LogActionService::logAction(
+                    $userId,
+                    'delete',
+                    'Disease',
+                    $id,
+                    ['error' => 'Disease not found'],
+                    "Failed to delete disease: Disease not found",
+                    false
+                );
+                return [false, 'Disease not found.', []];
+            }
+
+            $diseaseInfo = [
+                'name' => $disease->name,
+                'had_cover_page' => !is_null($disease->cover_page),
+                'schema_columns_count' => count($disease->schema['columns'] ?? [])
+            ];
 
             if ($disease->cover_page) {
                 $this->fileStorage->deleteFile($disease->cover_page, true);
@@ -100,14 +190,32 @@ class DiseaseService
             $disease->delete();
 
             DB::commit();
+            LogActionService::logAction(
+                $userId,
+                'delete',
+                'Disease',
+                $id,
+                $diseaseInfo,
+                "Deleted disease: {$disease->name}",
+                true
+            );
             return [true, 'Disease deleted successfully.', []];
         } catch (\Throwable $exception) {
             DB::rollBack();
-            // TO DO logging
+            
+            LogActionService::logAction(
+                $userId,
+                'delete',
+                'Disease',
+                $id,
+                ['error' => $exception->getMessage()],
+                "Failed to delete disease: {$exception->getMessage()}",
+                false
+            );
             return [false, 'Disease deletion failed: ' . $exception->getMessage(), []];
         }
     }
-
+    
     public function getDisease(array $filters): array
     {
         try {
@@ -118,13 +226,13 @@ class DiseaseService
             $this->applyDiseaseFilters($query, $filters);
             
             $paginatedData = $this->paginateResults($query, $filters, 'diseases');
-
+            
             return [true, 'Diseases retrieved successfully.', $paginatedData];
         } catch (\Throwable $exception) {
             return [false, 'Failed to retrieve diseases: ' . $exception->getMessage(), []];
         }
     }
-
+    
     public function getDiseaseDetails($id): array
     {
         try {
@@ -135,6 +243,36 @@ class DiseaseService
         }
     }
     
+    public function getStatistics(array $filters): array
+    {
+        try {
+            $query = Disease::query();
+            $query->withCount('diseaseRecords');
+
+            $this->applyDiseaseFilters($query, $filters);
+
+            $diseases = $query->get(['id', 'name', 'disease_records_count']);
+
+            $totalDiseaseRecords = $diseases->sum('disease_records_count');
+
+            $stats = [
+                'total_disease_records' => $totalDiseaseRecords,
+                'diseases' => $diseases->map(function ($disease) {
+                    return [
+                        'id' => $disease->id,
+                        'name' => $disease->name,
+                        'disease_records_count' => $disease->disease_records_count,
+                    ];
+                }),
+            ];
+    
+            return [true, 'Disease statistics retrieved successfully.', $stats];
+        } catch (\Throwable $exception) {
+            return [false, 'Failed to retrieve statistics: ' . $exception->getMessage(), []];
+        }
+    }
+    
+
     public function getSchemaField(int $diseaseId): array
     {
         try {
@@ -143,26 +281,26 @@ class DiseaseService
             if (!$success) {
                 return [];
             }
-
+            
             $schema = $disease->schema['columns'] ?? null;
-
+            
             if (!$schema) {
                 return [];
             }
-
+            
             $formattedSchema = [];
             foreach ($schema as $column) {
                 $field = [
                     'name' => $column['name'] ?? null,
                     'type' => $column['type'] ?? null,
                 ];
-    
+                
                 if ($field['type'] === 'file') {
                     $field['format'] = $column['format'];
                 } else {
                     $field['is_visible'] = filter_var($column['is_visible'] ?? false, FILTER_VALIDATE_BOOLEAN);
                 }
-    
+                
                 $formattedSchema[] = $field;
             }
 
@@ -171,25 +309,25 @@ class DiseaseService
             return []; 
         }
     }
-
+    
     private function applyDiseaseFilters(Builder $query, array $filters): void
     {
         if (!empty($filters['name'])) {
             $query->where('name', 'like', '%' . trim($filters['name']) . '%');
         }
-
+        
         if (!empty($filters['column_type'])) {
             $query->whereJsonContains('schema->columns', ['type' => $filters['column_type']]);
         }
-
+        
         if (!empty($filters['column_name'])) {
             $query->whereJsonContains('schema->columns', ['name' => $filters['column_name']]);
         }
-
+        
         //Sorting
         $query->orderBy('created_at', 'desc');
     }
-
+    
     private function paginateResults(Builder $query, array $filters, string $itemsKey): array
     {
         $perPage = isset($filters['per_page']) && 

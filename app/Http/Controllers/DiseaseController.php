@@ -22,7 +22,9 @@ class DiseaseController extends Controller
 
     public function createDisease(CreateDiseaseRequest $request): JsonResponse
     {
-        [$success, $message, $data] = $this->diseaseService->createDisease($request->validated());
+        $userId = $request->user()->id;
+
+        [$success, $message, $data] = $this->diseaseService->createDisease($request->validated(), $userId);
 
         if (!$success) {
             return ResponseJson::failedResponse($message, $data);
@@ -34,7 +36,10 @@ class DiseaseController extends Controller
     public function editDisease(EditDiseaseRequest $request, $diseaseId): JsonResponse
     {
         // Log::info('EditDisease Request Data: ', $request->validated());
-        [$success, $message, $data] = $this->diseaseService->editDisease($diseaseId, $request->validated());
+
+        $userId = $request->user()->id;
+
+        [$success, $message, $data] = $this->diseaseService->editDisease($diseaseId, $request->validated(), $userId);
 
         if(!$success){
             return ResponseJson::failedResponse($message, $data);
@@ -45,7 +50,9 @@ class DiseaseController extends Controller
 
     public function deleteDisease(DiseaseIdRequest $request, $diseaseId): JsonResponse
     {
-        [$success, $message, $data] = $this->diseaseService->deleteDisease($diseaseId);
+        $userId = $request->user()->id;
+
+        [$success, $message, $data] = $this->diseaseService->deleteDisease($diseaseId, $userId);
 
         if(!$success){
             return ResponseJson::failedResponse($message, $data);
@@ -63,15 +70,25 @@ class DiseaseController extends Controller
         }
         return ResponseJson::successResponse('Disease retrieved successfully.', $data);
     }
-
+    
     public function getDiseaseDetails(DiseaseIdRequest $request, $diseaseId): JsonResponse
     {
         [$success, $message, $data] = $this->diseaseService->getDiseaseDetails($diseaseId);
+        
+        if(!$success){
+            return ResponseJson::failedResponse($message, $data);
+        }
+        
+        return ResponseJson::successResponse('Disease details retrieved successfully.', $data);
+    }
+
+    public function getStatistics(Request $request): JsonResponse
+    {
+        [$success, $message, $data]= $this->diseaseService->getStatistics($request->all());
 
         if(!$success){
             return ResponseJson::failedResponse($message, $data);
         }
-
-        return ResponseJson::successResponse('Disease details retrieved successfully.', $data);
+        return ResponseJson::successResponse('Disease statistics retrieved successfully.', $data);
     }
 }
