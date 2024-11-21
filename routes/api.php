@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/logs', [LogActionController::class, 'getLogActions'])->name('admin.logs.index');
     });
 
+    Route::get('users/profile', [AdminUserController::class, 'getUserProfile'])->name('admin.users.show');
     // Disease Route
     Route::prefix('diseases')->middleware(['checkDiseaseAccess'])->group(function() {
         Route::get('/', [DiseaseController::class, 'getDiseases']);

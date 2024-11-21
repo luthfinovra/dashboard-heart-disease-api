@@ -108,4 +108,25 @@ class AdminUserController extends Controller
 
         return ResponseJson::successResponse('User details retrieved successfully.', $data);
     }
+
+    public function getUserProfile(Request $request)
+    {
+        $user = $request->user(); // Get the authenticated user
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile retrieved successfully.',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'institution' => $user->institution,
+                'gender' => $user->gender,
+                'phone' => $user->phone_number,
+                'approval_status' => $user->approval_status,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ]
+        ]);
+    }
 }

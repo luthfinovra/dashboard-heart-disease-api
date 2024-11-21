@@ -12,8 +12,10 @@ class CreateCommentsTable extends Migration
             $table->id();
             $table->foreignId('disease_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->text('content');
-            $table->foreignId('parent_id')->nullable()->constrained('comments')->onDelete('cascade');
+            $table->text('content')->nullable(); // Allow null for deleted comments
+            $table->foreignId('parent_id')->nullable()->constrained('comments')->nullOnDelete();
+            $table->enum('status', ['active', 'deleted'])->default('active'); // Add status column
+            $table->softDeletes(); // Add soft deletes
             $table->timestamps();
         });
     }
