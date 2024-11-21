@@ -9,6 +9,7 @@ use App\Http\Controllers\DiseaseController;
 use App\Http\Controllers\DiseaseRecordController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\LogActionController;
+use App\Http\Controllers\CommentController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -39,7 +40,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/logs', [LogActionController::class, 'getLogActions'])->name('admin.logs.index');
     });
 
-    Route::prefix('diseases')->middleware(['auth:sanctum', 'checkDiseaseAccess'])->group(function() {
+    // Disease Route
+    Route::prefix('diseases')->middleware(['checkDiseaseAccess'])->group(function() {
         Route::get('/', [DiseaseController::class, 'getDiseases']);
         
         // Admin-only routes
@@ -50,8 +52,18 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{diseaseId}', [DiseaseController::class, 'deleteDisease']);
         });
 
+        // Get Disease
         Route::get('/{diseaseId}', [DiseaseController::class, 'getDiseaseDetails']);
         
+        // Comment Routes
+        Route::prefix('{diseaseId}/comments')->group(function () {
+            Route::get('/', [CommentController::class, 'getComments']);
+            Route::post('/', [CommentController::class, 'createComment']);
+            Route::put('/{commentId}', [CommentController::class, 'editComment'])->middleware('checkCommentAuthorOrAdmin');
+            Route::delete('/{commentId}', [CommentController::class, 'deleteComment'])->middleware('checkCommentAuthorOrAdmin');
+        });
+        
+
         // Disease records routes
         Route::prefix('{diseaseId}/records')->group(function () {
             Route::get('/', [DiseaseRecordController::class, 'getDiseaseRecords']);
@@ -63,18 +75,18 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::delete('/{recordId}', [DiseaseRecordController::class, 'deleteDiseaseRecord']);
             });
         });
+
     });
 
-
-
+    // Files Route
     Route::get('files/records/download/{path}', [FileController::class, 'downloadRecord'])
     ->where('path', 'diseases/records/[0-9]+/.*')
-    ->middleware(['auth:sanctum', 'checkDiseaseAccess'])
+    ->middleware(['checkDiseaseAccess'])
     ->name('files.download.record');
     
     Route::get('files/records/preview/{path}', [FileController::class, 'previewFile'])
     ->where('path', 'diseases/records/[0-9]+/.*')
-    ->middleware(['auth:sanctum', 'checkDiseaseAccess'])
+    ->middleware(['checkDiseaseAccess'])
     ->name('files.records.preview');
 
     // Operator-only routes
