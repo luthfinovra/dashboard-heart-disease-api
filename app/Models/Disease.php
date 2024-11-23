@@ -33,9 +33,13 @@ class Disease extends Model
 
     protected function getCoverPageUrlAttribute(): ?string
     {
-        return $this->cover_page ? Storage::url('/public/' . $this->cover_page) : null;
+        if ($this->cover_page) {
+            //$domain = env('APP_URL');
+            return Storage::url('public/' . $this->cover_page);
+        }
+        return null;
     }
-
+    
     public function toArray()
     {
         $array = parent::toArray();

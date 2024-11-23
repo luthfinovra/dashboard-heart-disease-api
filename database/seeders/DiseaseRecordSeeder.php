@@ -85,7 +85,7 @@ class DiseaseRecordSeeder extends Seeder
         ];
     
         foreach ($diseaseRecords as $diseaseId => $files) {
-            $basePath = "diseases/records/$diseaseId"; // Dynamic path based on disease_id
+            $basePath = "public/diseases/records/$diseaseId"; // Dynamic path based on disease_id
             Storage::makeDirectory($basePath); // Ensure the disease-specific record directory exists
     
             foreach ($files as $filename) {

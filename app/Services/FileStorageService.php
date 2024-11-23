@@ -29,7 +29,7 @@ class FileStorageService
     public function storeRecordFile($file, int $diseaseId, string $fieldName): string
     {
         $filename = Str::slug($fieldName) . '-' . time() . '.' . $file->getClientOriginalExtension();
-        return $this->storeFile($file, "diseases/records/$diseaseId", $filename);
+        return $this->storeFile($file, "diseases/records/$diseaseId", $filename, true);
     }
 
     public function deleteFile(?string $path, bool $isPublic = false): bool

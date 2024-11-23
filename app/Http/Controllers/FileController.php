@@ -17,7 +17,8 @@ class FileController extends Controller
     public function __construct(FileStorageService $fileStorage)
     {
         $this->fileStorage = $fileStorage;
-        $this->middleware(['auth:sanctum', 'checkDiseaseAccess']);
+        $this->middleware(['auth:sanctum', 'checkDiseaseAccess'])->only(['previewFile']);
+        // $this->middleware('signed')->only(['downloadRecord']); // Add signed middleware for downloads
     }
 
     public function previewFile(Request $request, string $path)
@@ -57,6 +58,10 @@ class FileController extends Controller
     public function downloadRecord(Request $request, string $path)
     {
         try {
+            if (!$request->hasValidSignature()) {
+                abort(401, 'Invalid signature');
+            }
+
             // Clean up the path to match storage structure
             $path = $this->sanitizePath($path);
             
@@ -78,9 +83,8 @@ class FileController extends Controller
             }
 
             // Log download attempt
-            Log::info('File download initiated', [
+            Log::info('File download initiated via signed URL', [
                 'path' => $path,
-                'user_id' => $request->user()->id,
                 'disease_id' => $record->disease_id,
                 'record_id' => $record->id
             ]);
@@ -91,8 +95,7 @@ class FileController extends Controller
             Log::error('File download failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'path' => $path ?? 'undefined',
-                'user_id' => $request->user()->id ?? 'undefined'
+                'path' => $path ?? 'undefined'
             ]);
 
             abort(500, 'Failed to download file: ' . $e->getMessage());

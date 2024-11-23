@@ -10,6 +10,7 @@ use App\Http\Controllers\DiseaseRecordController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\LogActionController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\DiseaseRecordExportController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -79,16 +80,30 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
 
-    // Files Route
-    Route::get('files/records/download/{path}', [FileController::class, 'downloadRecord'])
-    ->where('path', 'diseases/records/[0-9]+/.*')
-    ->middleware(['checkDiseaseAccess'])
-    ->name('files.download.record');
+    // // Files Route
+    // Route::get('files/records/download/{path}', [FileController::class, 'downloadRecord'])
+    // ->where('path', 'diseases/records/[0-9]+/.*')
+    // ->middleware(['checkDiseaseAccess'])
+    // ->name('files.download.record');
     
-    Route::get('files/records/preview/{path}', [FileController::class, 'previewFile'])
-    ->where('path', 'diseases/records/[0-9]+/.*')
-    ->middleware(['checkDiseaseAccess'])
-    ->name('files.records.preview');
+    // Route::get('files/records/preview/{path}', [FileController::class, 'previewFile'])
+    // ->where('path', 'diseases/records/[0-9]+/.*')
+    // ->middleware(['checkDiseaseAccess'])
+    // ->name('files.records.preview');
+
+    Route::middleware(['auth:sanctum', 'checkDiseaseAccess'])->group(function () {
+        // Export all records
+        Route::get('/diseases/{diseaseId}/export', [
+            DiseaseRecordExportController::class, 
+            'exportToCsv'
+        ])->name('disease.records.export');
+        
+        // Export single record
+        Route::get('/diseases/{diseaseId}/records/{recordId}/export', [
+            DiseaseRecordExportController::class, 
+            'exportSingleRecord'
+        ])->name('disease.record.export');
+    });
 
     // Operator-only routes
     Route::middleware(['checkRole:operator'])->prefix('operator')->group(function () {
