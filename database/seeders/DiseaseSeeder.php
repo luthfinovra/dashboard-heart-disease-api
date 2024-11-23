@@ -24,7 +24,7 @@ class DiseaseSeeder extends Seeder
                         ["name" => "signals", "type" => "string", "is_visible" => true],
                         ["name" => "durasi", "type" => "decimal", "is_visible" => true],
                         ["name" => "tanggal_tes", "type" => "datetime", "is_visible" => true],
-                        ["name" => "file_detak_jantung", "type" => "file", "format" => ".wav"]
+                        ["name" => "file_detak_jantung", "type" => "file", "format" => "audio"]
                     ]
                 ],
                 'cover_page' => null,
@@ -40,7 +40,7 @@ class DiseaseSeeder extends Seeder
                         ["name" => "tanggal_lahir", "type" => "date", "is_visible" => true],
                         ["name" => "tempat_tes", "type" => "string", "is_visible" => true],
                         ["name" => "tanggal_tes", "type" => "datetime", "is_visible" => true],
-                        ["name" => "record_data", "type" => "file", "format" => ".wav", "multiple" => true]
+                        ["name" => "record_data", "type" => "file", "format" => "audio", "multiple" => true]
                     ]
                 ],
                 'cover_page' => null,

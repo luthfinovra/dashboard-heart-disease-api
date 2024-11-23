@@ -27,7 +27,7 @@ class CreateDiseaseRequest extends FormRequest
                 'regex:/^[a-zA-Z0-9_]+$/',
                 'distinct'
             ],
-            'schema.columns.*.type' => 'required|string|in:string,text,integer,decimal,float,datetime,time,file,boolean,enum,email,phone',
+            'schema.columns.*.type' => 'required|string|in:string,text,integer,decimal,float,date,datetime,time,file,boolean,email,phone',
             //'schema.columns.*.type' => 'required|string|in:string,integer,enum,decimal,date,file,time,datetime,boolean,array,float,text,email,phone,json,range',
             'schema.columns.*.options' => 'required_if:schema.columns.*.type,enum|array',
             'schema.columns.*.format' => 'required_if:schema.columns.*.type,file|string',

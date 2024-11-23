@@ -40,7 +40,7 @@ class LogActionService{
     {
         try {
             $query = Log::query();
-            $query->with(['user:id,name,role']); 
+            $query->with(['user:id,name,role,email']); 
 
             $this->applyLogFilters($query, $filters);
 

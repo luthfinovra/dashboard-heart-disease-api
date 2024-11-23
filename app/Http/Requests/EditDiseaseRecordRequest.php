@@ -34,6 +34,30 @@ class EditDiseaseRecordRequest extends FormRequest
      */
     public function rules(): array
     {
+
+        $mimeTypeMap = [
+            'audio' => [
+                'aac', 'midi', 'mp3', 'ogg', 'wav', 'webm', 'flac', 'aiff', 'amr', 'opus'
+            ],
+            'video' => [
+                'mp4', 'avi', 'mkv', 'webm', 'ogg', '3gp', 'flv', 'mov', 
+                'wmv', 'mpg', 'mpeg', 'm4v', 'h264', 'hevc'
+            ],
+            'image' => [
+                'jpeg', 'jpg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'svg', 'heif', 'heic', 
+                'ico', 'jp2', 'j2k', 'avif'
+            ],
+            'text-document' => [
+                'pdf', 'doc', 'docx', 'xml', 'json', 'html', 'txt', 'rtf', 'odt'
+            ],
+            'compressed-document' => [
+                'zip', '7z', 'tar', 'gz', 'rar', 'bz2', 'xz'
+            ],
+            'spreadsheet' => [
+                'xls', 'xlsx', 'csv', 'ods'
+            ],
+        ];
+
         $rules = [
             'diseaseId' => 'required|integer|exists:diseases,id',
             'recordId' => [
@@ -81,28 +105,51 @@ class EditDiseaseRecordRequest extends FormRequest
                                 $columnRules[] = 'sometimes|required|date_format:H:i:s';
                                 break;
                             case 'file':
+                                $columnRules[] = 'sometimes|required'; // Ensures a file is uploaded.
+
+                                // Check if a 'format' is defined in the schema for the column.
                                 if (!empty($column['multiple'])) {
-                                    // For multiple files
-                                    $rules[$columnName] = 'sometimes|required|array';
+                                    // Ensure the field is an array of files.
+                                    $rules[$columnName] = 'sometimes|required|array|min:1'; 
+                                
+                                    // Apply validation to each file in the array.
+                                    $fileRules = ['file']; // Start with basic file validation.
                                     
-                                    $fileRules = ['file'];
+                                    // Add MIME type validation if a format is specified.
                                     if (!empty($column['format'])) {
-                                        $formats = explode(',', trim($column['format'], '.'));
-                                        $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
-                                        $fileRules[] = 'mimes:' . implode(',', $formats);
+                                        $category = trim($column['format'], '.'); // Strip the dot from the format.
+                                        if (array_key_exists($category, $mimeTypeMap)) {
+                                            $formats = $mimeTypeMap[$category];
+                                            $fileRules[] = 'mimes:' . implode(',', $formats);
+                                        } else {
+                                            Log::warning("Unsupported format '{$column['format']}' for column '{$columnName}'");
+                                        }
                                     }
                                     
+                                    // Apply the rules to each file in the array.
                                     $rules[$columnName . '.*'] = implode('|', $fileRules);
+                                    // print_r($rules);
                                 } else {
-                                    // For single file
-                                    $fileRules = ['sometimes', 'required', 'file'];
+                                    // Single file upload handling.
+                                    $columnRules[] = 'sometimes|required|file';
+                                    
+                                    // Add MIME type validation if a format is specified.
                                     if (!empty($column['format'])) {
-                                        $formats = explode(',', trim($column['format'], '.'));
-                                        $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
-                                        $fileRules[] = 'mimes:' . implode(',', $formats);
+                                        $category = trim($column['format'], '.'); // Strip the dot from the format.
+                                        if (array_key_exists($category, $mimeTypeMap)) {
+                                            $formats = $mimeTypeMap[$category];
+                                            $columnRules[] = 'mimes:' . implode(',', $formats);
+                                        } else {
+                                            Log::warning("Unsupported format '{$column['format']}' for column '{$columnName}'");
+                                        }
                                     }
-                                    $rules[$columnName] = implode('|', $fileRules);
+                                
+                                    // Apply the accumulated rules for a single file.
+                                    $rules[$columnName] = implode('|', $columnRules);
+                                    // print_r($rules);
                                 }
+                                
+                                // print_r($columnRules);
                                 break;
                             case 'boolean':
                                 $columnRules[] = 'sometimes|required|boolean';

@@ -29,8 +29,8 @@ class EditCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'diseaseId' => 'required|exists:diseases,id',
-            'commentId' => 'required|exists:comments,id',
+            'diseaseId' => 'required|integer|exists:diseases,id',
+            'commentId' => 'required|integer|exists:comments,id',
             'content' => 'required|string|max:1000',
         ];
     }

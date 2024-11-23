@@ -68,6 +68,7 @@ class AdminUserController extends Controller
 
     public function editUser(EditUserRequest $request, $id): JsonResponse
     {
+
         [$success, $message, $data] = $this->adminUserService->editUser($id, $request->validated());
 
         if(!$success){

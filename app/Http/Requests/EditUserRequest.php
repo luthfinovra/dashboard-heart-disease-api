@@ -10,24 +10,26 @@ use App\Models\User;
 
 class EditUserRequest extends FormRequest
 {
-    public function rules(): array
-{
-    $user = $this->route('userId');
-    $userRecord = User::find($user);
-    $userRole = $userRecord ? $userRecord->role : null;
 
-    return [
-        'name' => 'sometimes|required|string|max:100',
-        'email' => 'sometimes|nullable|email|unique:users,email,' . $user . '|max:100',
-        'password' => 'sometimes|nullable|string|min:8|max:64|confirmed',
-        'role' => 'sometimes|required|in:admin,operator,peneliti',
-        'institution' => 'nullable|string|max:255',
-        'gender' => 'nullable|in:male,female,prefer not to say',
-        'phone_number' => 'nullable|string|max:50',
-        'approval_status' => 'sometimes|in:approved,pending,rejected',
-        'disease_id' => 'sometimes|integer|exists:diseases,id|required_if:role,operator'
-    ];
-}
+    public function rules(): array
+    {
+
+        $user = $this->route('userId');
+        $userRecord = User::find($user);
+        $userRole = $userRecord ? $userRecord->role : null;
+
+        return [
+            'name' => 'sometimes|required|string|max:100',
+            'email' => 'sometimes|nullable|email|unique:users,email,' . $user . '|max:100',
+            'password' => 'sometimes|nullable|string|min:8|max:64|confirmed',
+            'role' => 'sometimes|required|in:admin,operator,peneliti',
+            'institution' => 'nullable|string|max:255',
+            'gender' => 'nullable|in:male,female,prefer not to say',
+            'phone_number' => 'nullable|string|max:50',
+            'approval_status' => 'sometimes|in:approved,pending,rejected',
+            'disease_id' => 'sometimes|integer|exists:diseases,id|required_if:role,operator'
+        ];
+    }
 
 public function messages()
 {

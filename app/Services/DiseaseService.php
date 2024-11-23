@@ -313,7 +313,7 @@ class DiseaseService
     private function applyDiseaseFilters(Builder $query, array $filters): void
     {
         if (!empty($filters['name'])) {
-            $query->where('name', 'like', '%' . trim($filters['name']) . '%');
+            $query->where('name', 'ILIKE', '%' . trim($filters['name']) . '%');
         }
         
         if (!empty($filters['column_type'])) {

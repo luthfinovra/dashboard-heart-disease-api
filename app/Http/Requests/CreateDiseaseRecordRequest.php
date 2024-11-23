@@ -36,27 +36,27 @@ class CreateDiseaseRecordRequest extends FormRequest
 
         $mimeTypeMap = [
             'audio' => [
-                'audio/aac', 'audio/midi', 'audio/mp3', 'audio/ogg', 
-                'audio/wav', 'audio/webm', 'audio/x-wav', 'audio/x-mpeg'
+                'aac', 'midi', 'mp3', 'ogg', 'wav', 'webm', 'flac', 'aiff', 'amr', 'opus'
             ],
             'video' => [
-                'video/mp4', 'video/avi', 'video/mkv', 'video/webm', 
-                'video/ogg', 'video/3gpp', 'video/x-flv', 'video/x-msvideo'
+                'mp4', 'avi', 'mkv', 'webm', 'ogg', '3gp', 'flv', 'mov', 
+                'wmv', 'mpg', 'mpeg', 'm4v', 'h264', 'hevc'
             ],
             'image' => [
-                'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 
-                'image/webp', 'image/tiff', 'image/svg+xml', 'image/heif', 'image/heic'
+                'jpeg', 'jpg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'svg', 'heif', 'heic', 
+                'ico', 'jp2', 'j2k', 'avif'
             ],
             'text-document' => [
-                'application/pdf', 'application/msword', 'application/xml', 'application/json'
+                'pdf', 'doc', 'docx', 'xml', 'json', 'html', 'txt', 'rtf', 'odt'
             ],
             'compressed-document' => [
-                'application/zip', 'application/x-7z-compressed', 'text/html', 'text/xml'
+                'zip', '7z', 'tar', 'gz', 'rar', 'bz2', 'xz'
             ],
             'spreadsheet' => [
-                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv', 
+                'xls', 'xlsx', 'csv', 'ods'
             ],
         ];
+        
         
         
         $rules = [
@@ -94,30 +94,43 @@ class CreateDiseaseRecordRequest extends FormRequest
                                 break;
                             case 'file':
                                 $columnRules[] = 'required';
-                                
+
                                 if (!empty($column['multiple'])) {
-                                    $rules[$columnName] = 'array';
-                                    
+                                    // Multiple file upload handling
+                                    $rules[$columnName] = 'required|array|min:1'; 
+                                
                                     $fileRules = ['file'];
                                     
-                                    // if (!empty($column['format'])) {
-                                    //     $formats = explode(',', trim($column['format'], '.'));
-                                    //     $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
-                                    //     $fileRules[] = 'mimes:' . implode(',', $formats);
-                                    // }
-                                    
+                                    if (!empty($column['format'])) {
+                                        $category = trim($column['format'], '.');
+                                        if (array_key_exists($category, $mimeTypeMap)) {
+                                            $formats = $mimeTypeMap[$category];
+                                            $fileRules[] = 'mimes:' . implode(',', $formats);
+                                        } else {
+                                            Log::warning("Unsupported format '{$column['format']}' for column '{$columnName}'");
+                                        }
+                                    }
                                     $rules[$columnName . '.*'] = implode('|', $fileRules);
+                                    // print_r($rules);
                                 } else {
-                                    $columnRules[] = 'file';
+                                    // Single file upload handling.
+                                    $columnRules[] = 'required|file';
                                     
-                                    // if (!empty($column['format'])) {
-                                    //     $formats = explode(',', trim($column['format'], '.'));
-                                    //     $formats = array_map(fn($format) => ltrim($format, '.'), $formats);
-                                    //     $columnRules[] = 'mimes:' . implode(',', $formats);
-                                    // }
-                                    
+                                    if (!empty($column['format'])) {
+                                        $category = trim($column['format'], '.');
+                                        if (array_key_exists($category, $mimeTypeMap)) {
+                                            $formats = $mimeTypeMap[$category];
+                                            $columnRules[] = 'mimes:' . implode(',', $formats);
+                                        } else {
+                                            Log::warning("Unsupported format '{$column['format']}' for column '{$columnName}'");
+                                        }
+                                    }
+                                
                                     $rules[$columnName] = implode('|', $columnRules);
+                                    // print_r($rules);
                                 }
+                                
+                                // print_r($columnRules);
                                 break;
                             case 'boolean':
                                 $columnRules[] = 'required|boolean';
@@ -136,48 +149,6 @@ class CreateDiseaseRecordRequest extends FormRequest
                                 $columnRules[] = 'regex:/^([0-9\s\-\+\(\)]*)$/';
                                 break;
                         }
-        
-                        // // Add required/nullable validation
-                        // if (!empty($column['required'])) {
-                        //     $columnRules[] = 'required';
-                        // } else {
-                        //     $columnRules[] = 'nullable';
-                        // }
-        
-                        // // Add min/max validation if specified
-                        // if (!empty($column['min'])) {
-                        //     switch ($column['type']) {
-                        //         case 'string':
-                        //         case 'text':
-                        //             $columnRules[] = 'min:' . $column['min'];
-                        //             break;
-                        //         case 'integer':
-                        //         case 'decimal':
-                        //         case 'float':
-                        //             $columnRules[] = 'min_digits:' . $column['min'];
-                        //             break;
-                        //         case 'file':
-                        //             $columnRules[] = 'min:' . $column['min']; // min in kilobytes
-                        //             break;
-                        //     }
-                        // }
-        
-                        // if (!empty($column['max'])) {
-                        //     switch ($column['type']) {
-                        //         case 'string':
-                        //         case 'text':
-                        //             $columnRules[] = 'max:' . $column['max'];
-                        //             break;
-                        //         case 'integer':
-                        //         case 'decimal':
-                        //         case 'float':
-                        //             $columnRules[] = 'max_digits:' . $column['max'];
-                        //             break;
-                        //         case 'file':
-                        //             $columnRules[] = 'max:' . $column['max']; // max in kilobytes
-                        //             break;
-                        //     }
-                        // }
         
                         if (!empty($columnRules)) {
                             $rules[$columnName] = implode('|', $columnRules);

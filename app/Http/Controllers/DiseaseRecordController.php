@@ -27,6 +27,7 @@ class DiseaseRecordController extends Controller
         //var_dump($request->all());
         // return ResponseJson::failedResponse("tez", []);
         $userId = $request->user()->id;
+        //echo(is_array($request->input('record_data')));
         [$success, $message, $data] = $this->diseaseRecordService->createDiseaseRecord($request->validated(), $userId);
 
         if (!$success) {
