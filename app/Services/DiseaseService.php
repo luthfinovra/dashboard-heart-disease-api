@@ -298,12 +298,9 @@ class DiseaseService
                 if ($field['type'] === 'file') {
                     $field['format'] = $column['format'];
 
-                    if (isset($column['multiple']) && $column['multiple']) {
-                        $field['multiple'] = true;
-                    }
-                } else {
-                    $field['is_visible'] = filter_var($column['is_visible'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                    $field['multiple'] = isset($column['multiple']) ? (bool) $column['multiple'] : false; // Ensure multiple is set with default false
                 }
+                $field['is_visible'] = filter_var($column['is_visible'] ?? false, FILTER_VALIDATE_BOOLEAN);
                 
                 $formattedSchema[] = $field;
             }
