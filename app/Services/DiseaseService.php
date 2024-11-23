@@ -297,6 +297,10 @@ class DiseaseService
                 
                 if ($field['type'] === 'file') {
                     $field['format'] = $column['format'];
+
+                    if (isset($column['multiple']) && $column['multiple']) {
+                        $field['multiple'] = true;
+                    }
                 } else {
                     $field['is_visible'] = filter_var($column['is_visible'] ?? false, FILTER_VALIDATE_BOOLEAN);
                 }

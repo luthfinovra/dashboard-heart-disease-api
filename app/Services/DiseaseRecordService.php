@@ -259,13 +259,43 @@ class DiseaseRecordService
         }
     }
 
+    private function transformFileFields(array $data, array $schema): array
+    {
+        foreach ($schema as $field) {
+            // print_r($field);
+            if ($field['type'] === 'file' && isset($data[$field['name']])) {
+                // Handle single file
+                if (empty($field['multiple'])) {
+                    $data[$field['name']] = $this->generatePublicFileUrl($data[$field['name']]);
+                } else {
+                    // Handle multiple files
+                    $data[$field['name']] = array_map(function ($filePath) {
+                        return $this->generatePublicFileUrl($filePath);
+                    }, $data[$field['name']]);
+                }
+            }
+        }
+    
+        return $data;
+    }
+    
+
+    /**
+     * Generate a public URL for a given file path.
+     */
+    private function generatePublicFileUrl(string $filePath): string
+    {
+        return Storage::url('public/' . $filePath);
+        //return asset('storage/' . $filePath);
+    }
+
     public function getDiseaseRecords($diseaseId, array $filters)
     {
         try {
             $schema = $this->diseaseService->getSchemaField($diseaseId);
 
             $disease = Disease::findOrFail($diseaseId);
-            
+
             if (empty($schema)) {
                 return [false, 'Schema not found for this disease.', []];
             }
@@ -273,11 +303,20 @@ class DiseaseRecordService
             $query = $this->buildDiseaseRecordQuery($diseaseId, $filters);
             $paginatedData = $this->paginateResults($query, $filters);
 
+            // Check if records exist and transform them
+            $records = !empty($paginatedData['records'])
+                ? array_map(function ($record) use ($schema) {
+                    $record['data'] = $this->transformFileFields($record['data'], $schema);
+                    return $record;
+                }, $paginatedData['records'])
+                : [];
+
             $response = [
                 'name' => $disease['name'],
                 'deskripsi' => $disease['deskripsi'],
                 'schema' => $schema,
-                'records' => $paginatedData['records'],
+                'export_url' => $disease->export_url,
+                'records' => $records,
                 'pagination' => $paginatedData['pagination']
             ];
 
@@ -286,6 +325,7 @@ class DiseaseRecordService
             return [false, 'Failed to retrieve disease records: ' . $exception->getMessage(), []];
         }
     }
+
 
     public function getDiseaseRecordDetails($diseaseId, $recordId): array
     {
@@ -300,9 +340,12 @@ class DiseaseRecordService
                 ->where('id', $recordId)
                 ->firstOrFail();
 
+            // Transform file fields in the record
+            $record->data = $this->transformFileFields($record->data, $schema);
+
             $response = [
                 'schema' => $schema,
-                'record' => $record,
+                'record' => $record->toArray(),
             ];
 
             return [true, 'Disease record details retrieved successfully.', $response];

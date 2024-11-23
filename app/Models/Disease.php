@@ -40,10 +40,17 @@ class Disease extends Model
         return null;
     }
     
+    protected function getExportUrlAttribute(): string
+    {
+        return url("/api/diseases/{$this->id}/export");
+    }
+
     public function toArray()
     {
         $array = parent::toArray();
         $array['cover_page_url'] = $this->cover_page_url;
+        $array['export_url'] = $this->export_url;
         return $array;
     }
+
 }
