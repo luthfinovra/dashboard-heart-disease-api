@@ -71,7 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', [DiseaseRecordController::class, 'getDiseaseRecords']);
             Route::get('/{recordId}', [DiseaseRecordController::class, 'getDiseaseRecordDetails']);
             
-            Route::middleware(['checkRole:admin,operator'])->group(function() {
+            Route::middleware(['checkRole:admin,operator', 'ensureOperatorManagesDisease'])->group(function() {
                 Route::post('/', [DiseaseRecordController::class, 'createDiseaseRecord']);
                 Route::put('/{recordId}', [DiseaseRecordController::class, 'editDiseaseRecord']);
                 Route::delete('/{recordId}', [DiseaseRecordController::class, 'deleteDiseaseRecord']);

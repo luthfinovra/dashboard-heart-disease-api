@@ -407,7 +407,7 @@ class AdminUserService
         }
 
         if (!empty($filters['name'])) {
-            $query->where('name', 'like', '%' . trim($filters['name']) . '%');
+            $query->where('name', 'ILIKE', '%' . trim($filters['name']) . '%');
         }
 
         if (!empty($filters['approval_status'])) {

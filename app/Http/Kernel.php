@@ -69,5 +69,6 @@ class Kernel extends HttpKernel
         'checkRole' => \App\Http\Middleware\CheckRole::class,
         'checkDiseaseAccess' => \App\Http\Middleware\CheckDiseaseAccess::class,
         'checkCommentAuthorOrAdmin' => \App\Http\Middleware\CheckCommentAuthorOrAdmin::class,
+        'ensureOperatorManagesDisease' => \App\Http\Middleware\EnsureOperatorManagesDisease::class,
     ];
 }

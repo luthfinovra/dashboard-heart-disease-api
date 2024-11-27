@@ -32,21 +32,39 @@ class DiseaseRecordService
             $diseaseId = $data['diseaseId'];
             unset($data['diseaseId']);
             
+            $schema = $this->diseaseService->getSchemaField($diseaseId);
+
             foreach ($data['data'] as $key => $value) {
-                if (is_array($value) && $this->isFileArray($value)) {
-                    $fileUrls = [];
-                    foreach ($value as $index => $file) {
-                        if ($file && is_file($file)) {
-                            $fileUrls[] = $this->fileStorage->storeRecordFile(
-                                $file, 
-                                $diseaseId, 
-                                $key . '-' . ($index + 1)
-                            );
+
+                $fieldSchema = collect($schema)->firstWhere('name', $key);
+
+                if (!$fieldSchema) {
+                    throw new \Exception("Field '{$key}' is not defined in the schema.");
+                }
+
+                if ($fieldSchema['type'] === 'file') {
+                    $isMultiple = $fieldSchema['multiple'] ?? false;
+
+                    if ($isMultiple) {
+                        $value = is_array($value) ? $value : [$value];
+                        $fileUrls = [];
+                        foreach ($value as $index => $file) {
+                            if ($file && is_file($file)) {
+                                $fileUrls[] = $this->fileStorage->storeRecordFile(
+                                    $file, 
+                                    $diseaseId, 
+                                    $key . '-' . ($index + 1)
+                                );
+                            }
                         }
+        
+                        $data['data'][$key] = $fileUrls;
+                    } else if (is_file($value)){
+                        $data['data'][$key] = $this->fileStorage->storeRecordFile($value, $diseaseId, $key);
                     }
-                    $data['data'][$key] = $fileUrls;
-                } elseif (is_file($value)) {
-                    $data['data'][$key] = $this->fileStorage->storeRecordFile($value, $diseaseId, $key);
+                } else {
+                    // Process non-file fields normally
+                    $data['data'][$key] = $value;
                 }
             }
 
@@ -85,6 +103,7 @@ class DiseaseRecordService
             );
             return [false, 'Disease record creation failed: ' . $exception->getMessage(), []];
         }
+
     }
 
     public function editDiseaseRecord($recordId, array $data, $userId): array
@@ -107,43 +126,65 @@ class DiseaseRecordService
             }
             $oldData = $diseaseRecord->toArray();
             $existingData = $diseaseRecord->data;
+
+            $diseaseId = $data['diseaseId'];
+            unset($data['diseaseId']);
+
+            $schema = $this->diseaseService->getSchemaField($diseaseId);
             
             foreach ($data['data'] as $key => $value) {
-                if (is_array($value) && $this->isFileArray($value)) {
-                    $fileUrls = [];
-                    
-                    // Delete old files
-                    if (isset($existingData[$key]) && is_array($existingData[$key])) {
-                        foreach ($existingData[$key] as $oldFile) {
-                            $this->fileStorage->deleteFile($oldFile);
+
+                $fieldSchema = collect($schema)->firstWhere('name', $key);
+
+                if (!$fieldSchema) {
+                    throw new \Exception("Field '{$key}' is not defined in the schema.");
+                }
+
+                if ($fieldSchema['type'] === 'file') {
+                    $isMultiple = $fieldSchema['multiple'] ?? false;
+    
+                    if ($isMultiple) {
+                        $value = is_array($value) ? $value : [$value];
+                        $fileUrls = [];
+    
+                        // Delete old files if they exist
+                        if (isset($existingData[$key]) && is_array($existingData[$key])) {
+                            foreach ($existingData[$key] as $oldFile) {
+                                $this->fileStorage->deleteFile($oldFile, true);
+                            }
                         }
-                    }
-                    
-                    // Store new files
-                    foreach ($value as $file) {
-                        if ($file && is_file($file)) {
-                            $fileUrls[] = $this->fileStorage->storeRecordFile(
-                                $file,
-                                $diseaseRecord->disease_id,
+    
+                        // Store new files
+                        foreach ($value as $index => $file) {
+                            if ($file && is_file($file)) {
+                                $fileUrls[] = $this->fileStorage->storeRecordFile(
+                                    $file,
+                                    $diseaseId,
+                                    $key . '-' . ($index + 1)
+                                );
+                            }
+                        }
+    
+                        $existingData[$key] = $fileUrls;
+                    } else {
+                        // Single file handling
+                        if (isset($existingData[$key])) {
+                            // echo($existingData[$key]);
+                            $this->fileStorage->deleteFile($existingData[$key], true);
+                        }
+    
+                        if (is_file($value)) {
+                            $existingData[$key] = $this->fileStorage->storeRecordFile(
+                                $value,
+                                $diseaseId,
                                 $key
                             );
+                        } else {
+                            $existingData[$key] = null; // Clear the field if no new file is provided
                         }
                     }
-                    $existingData[$key] = $fileUrls;
-                    
-                } elseif (is_file($value)) {
-                    // Delete old file
-                    if (isset($existingData[$key])) {
-                        $this->fileStorage->deleteFile($existingData[$key]);
-                    }
-                    
-                    // Store new file
-                    $existingData[$key] = $this->fileStorage->storeRecordFile(
-                        $value,
-                        $diseaseRecord->disease_id,
-                        $key
-                    );
                 } else {
+                    // Non-file fields
                     $existingData[$key] = $value;
                 }
             }
@@ -218,13 +259,28 @@ class DiseaseRecordService
                     ->count()
             ];
 
+            $diseaseId = $diseaseRecord->disease_id;
+
+            $schema = $this->diseaseService->getSchemaField($diseaseId);
+
+
+            // echo($diseaseRecord->data['file_detak_jantung']);
+
+            // $path = $diseaseRecord->data['file_detak_jantung'];
+            // echo($normalizedPath = str_replace(['\\', '/'], '/', $path));
+            // echo(is_string($path));
+            // echo(storage_path("app/public/{$path}"));
             foreach ($diseaseRecord->data as $key => $value) {
+                
+                $fieldSchema = collect($schema)->firstWhere('name', $key);
+
                 if (is_array($value)) {
                     foreach ($value as $filePath) {
-                        $this->fileStorage->deleteFile($filePath);
+                        $this->fileStorage->deleteFile($filePath, true);
                     }
-                } elseif (is_string($value) && file_exists(storage_path("app/public/{$value}"))) {
-                    $this->fileStorage->deleteFile($value);
+                } elseif (is_string($value) && $fieldSchema['type'] === 'file') {
+                    // echo($value);
+                    $this->fileStorage->deleteFile($value, true);
                 }
             }
             
