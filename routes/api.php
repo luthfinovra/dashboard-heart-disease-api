@@ -104,16 +104,6 @@ Route::middleware('auth:sanctum')->group(function () {
             'exportSingleRecord'
         ])->name('disease.record.export');
     });
-
-    // Operator-only routes
-    Route::middleware(['checkRole:operator'])->prefix('operator')->group(function () {
-        Route::get('/dashboard', [AuthController::class, 'operatorDashboard'])->name('operator.dashboard');
-    });
-    
-    // Researcher-only routes
-    Route::middleware(['checkRole:peneliti'])->prefix('researcher')->group(function () {
-        Route::get('/data', [AuthController::class, 'researcherData'])->name('researcher.data');
-    });
 });
 
 // Authentication Routes

@@ -415,7 +415,7 @@ class AdminUserService
         }
 
         // Add sorting if needed
-        $query->orderBy('created_at', 'desc');
+        $query->orderBy('updated_at', 'desc');
     }
 
     private function paginateResults(Builder $query, array $filters, string $itemsKey): array

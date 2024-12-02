@@ -376,6 +376,8 @@ class DiseaseRecordService
                 'pagination' => $paginatedData['pagination']
             ];
 
+
+
             return [true, 'Disease records retrieved successfully.', $response];
         } catch (\Throwable $exception) {
             return [false, 'Failed to retrieve disease records: ' . $exception->getMessage(), []];
@@ -415,6 +417,15 @@ class DiseaseRecordService
         $query = DiseaseRecord::where('disease_id', $diseaseId);
         
         // $this->applyDiseaseRecordFilters($query, $filters);
+        if(!empty($filters['order_by'])){
+            if($filters['order_by'] === 'desc'){
+                $query->orderBy('created_at', 'desc');
+            }else if($filters['order_by'] === 'desc'){
+                $query->orderBy('created_at', 'asc');
+            }
+        }
+        
+        $query->orderBy('updated_at', 'desc');
         
         return $query;
     }

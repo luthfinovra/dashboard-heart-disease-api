@@ -136,7 +136,7 @@ class DiseaseRecordExportController extends Controller
                     fn($path) => $this->generatePublicFileUrl($path),
                     $value
                 );
-                $value = implode(',', $urls);
+                $value = implode(' | ', $urls);
             } elseif (is_string($value) && str_contains($value, 'diseases/records/')) {
                 // Convert single file path to public URL
                 $value = $this->generatePublicFileUrl($value);

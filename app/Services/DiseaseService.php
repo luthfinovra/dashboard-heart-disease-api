@@ -326,13 +326,13 @@ class DiseaseService
         }
         
         //Sorting
-        $query->orderBy('created_at', 'desc');
+        $query->orderBy('updated_at', 'desc');
     }
     
     private function paginateResults(Builder $query, array $filters, string $itemsKey): array
     {
         $perPage = isset($filters['per_page']) && 
-                  is_numeric($filters['per_page']) && 
+                is_numeric($filters['per_page']) && 
                   $filters['per_page'] > 0 && 
                   $filters['per_page'] <= self::MAX_PER_PAGE
             ? (int) $filters['per_page']
