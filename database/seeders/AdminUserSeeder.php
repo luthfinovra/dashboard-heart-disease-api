@@ -20,7 +20,7 @@ class AdminUserSeeder extends Seeder
         if (!User::where('email', 'admin@example.com')->exists()) {
             $user = User::create([
                 'name' => 'Admin User',
-                'email' => 'admin@example.com',
+                'email' => env('ADMIN_DEFAULT_EMAIL', 'admin@example.com'),
                 'password' => Hash::make(env('ADMIN_DEFAULT_PASSWORD', 'password')),
                 'role' => 'admin',
                 'approval_status' => 'approved',
