@@ -32,7 +32,7 @@ class DiseaseRecordService
             $diseaseId = $data['diseaseId'];
             unset($data['diseaseId']);
             
-            $schema = $this->diseaseService->getSchemaField($diseaseId);
+            [$schema, $message] = $this->diseaseService->getSchemaField($diseaseId);
 
             foreach ($data['data'] as $key => $value) {
 
@@ -130,7 +130,7 @@ class DiseaseRecordService
             $diseaseId = $data['diseaseId'];
             unset($data['diseaseId']);
 
-            $schema = $this->diseaseService->getSchemaField($diseaseId);
+            [$schema, $message] = $this->diseaseService->getSchemaField($diseaseId);
             
             foreach ($data['data'] as $key => $value) {
 
@@ -261,7 +261,7 @@ class DiseaseRecordService
 
             $diseaseId = $diseaseRecord->disease_id;
 
-            $schema = $this->diseaseService->getSchemaField($diseaseId);
+            [$schema, $message] = $this->diseaseService->getSchemaField($diseaseId);
 
 
             // echo($diseaseRecord->data['file_detak_jantung']);
@@ -348,11 +348,14 @@ class DiseaseRecordService
     public function getDiseaseRecords($diseaseId, array $filters)
     {
         try {
-            $schema = $this->diseaseService->getSchemaField($diseaseId);
+            [$schema, $message] = $this->diseaseService->getSchemaField($diseaseId);
 
             $disease = Disease::findOrFail($diseaseId);
 
             if (empty($schema)) {
+                if ($message === 'Access denied. This disease is private.'){
+                    return [false, 'Cant Access Private Disease', []];
+                } 
                 return [false, 'Schema not found for this disease.', []];
             }
 
@@ -388,7 +391,7 @@ class DiseaseRecordService
     public function getDiseaseRecordDetails($diseaseId, $recordId): array
     {
         try {
-            $schema = $this->diseaseService->getSchemaField($diseaseId);
+            [$schema, $message] = $this->diseaseService->getSchemaField($diseaseId);
 
             if (empty($schema)) {
                 return [false, 'Schema not found for this disease.', []];

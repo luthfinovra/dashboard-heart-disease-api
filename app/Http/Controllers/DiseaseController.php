@@ -63,11 +63,14 @@ class DiseaseController extends Controller
 
     public function getDiseases(Request $request): JsonResponse
     {
-        [$success, $message, $data]= $this->diseaseService->getDisease($request->all());
+        $user = $request->user();
 
-        if(!$success){
+        [$success, $message, $data] = $this->diseaseService->getDisease($request->all(), $user);
+    
+        if (!$success) {
             return ResponseJson::failedResponse($message, $data);
         }
+    
         return ResponseJson::successResponse('Disease retrieved successfully.', $data);
     }
     

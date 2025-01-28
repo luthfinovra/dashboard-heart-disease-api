@@ -32,6 +32,7 @@ class DiseaseService
                 $disease = Disease::create([
                     'name' => $data['name'],
                     'deskripsi' => $data['deskripsi'],
+                    'visibilitas' => $data['visibilitas'],
                     'schema' => $data['schema'],
                     'cover_page' => null,
                 ]);
@@ -43,6 +44,7 @@ class DiseaseService
                 $disease = Disease::create([
                     'name' => $data['name'],
                     'deskripsi' => $data['deskripsi'],
+                    'visibilitas' => $data['visibilitas'],
                     'schema' => $data['schema'],
                     'cover_page' => null,
                 ]);
@@ -216,27 +218,64 @@ class DiseaseService
         }
     }
     
-    public function getDisease(array $filters): array
+    public function getDisease(array $filters, $user): array
     {
         try {
             $query = Disease::query();
-            
             $query->withCount('diseaseRecords');
-            
+
+            if ($user->role === 'operator') {
+                $query->where('id', $user->disease_id);
+            } elseif ($user->role === 'peneliti') {
+                $query->where('visibilitas', 'publik');
+            }
+
             $this->applyDiseaseFilters($query, $filters);
-            
+    
             $paginatedData = $this->paginateResults($query, $filters, 'diseases');
-            
+    
             return [true, 'Diseases retrieved successfully.', $paginatedData];
         } catch (\Throwable $exception) {
             return [false, 'Failed to retrieve diseases: ' . $exception->getMessage(), []];
         }
     }
     
+    
     public function getDiseaseDetails($id): array
     {
         try {
+
+            $user = auth()->user();
+
             $disease = Disease::withCount('diseaseRecords')->findOrFail($id);
+    
+            if (!$disease) {
+                return [false, 'Disease not found.', []];
+            }
+    
+            // Admins can access all diseases
+            if ($user->role === 'admin') {
+                return [true, 'Disease details retrieved successfully.', $disease];
+            }
+    
+            // Operators can only access their assigned diseases
+            if ($user->role === 'operator') {
+                $managesDisease = $user->managed_diseases['disease_id'];
+                if ($managesDisease != $id) {
+                    return [false, 'Access denied. You are not assigned to this disease.', []];
+                }
+            }
+    
+            // Researchers can only access public diseases
+            if ($user->role === 'peneliti') {
+                if ($user->approval_status !== 'approved') {
+                    return [false, 'Access denied. Your account is not approved.', []];
+                }
+                if ($disease->visibilitas !== 'publik') {
+                    return [false, 'Access denied. This disease is private.', []];
+                }
+            }
+    
             return [true, 'Disease details retrieved successfully.', $disease];
         } catch (\Throwable $exception) {
             return [false, 'Failed to retrieve disease details: ' . $exception->getMessage(), []];
@@ -279,13 +318,13 @@ class DiseaseService
             [$success, $message, $disease] = $this->getDiseaseDetails($diseaseId);
             
             if (!$success) {
-                return [];
+                return [[], $message];
             }
             
             $schema = $disease->schema['columns'] ?? null;
             
             if (!$schema) {
-                return [];
+                return [[], $message];
             }
             
             $formattedSchema = [];
@@ -305,7 +344,7 @@ class DiseaseService
                 $formattedSchema[] = $field;
             }
 
-            return $formattedSchema;
+            return [$formattedSchema, 'Schema Retrieved Successfully'];
         } catch (\Throwable $exception) {
             return []; 
         }
@@ -313,6 +352,10 @@ class DiseaseService
     
     private function applyDiseaseFilters(Builder $query, array $filters): void
     {
+        if (!empty($filters['visibilitas'])) {
+            $query->where('visibilitas', $filters['visibilitas']);
+        }
+
         if (!empty($filters['name'])) {
             $query->where('name', 'ILIKE', '%' . trim($filters['name']) . '%');
         }

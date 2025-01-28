@@ -16,6 +16,7 @@ class DiseaseSeeder extends Seeder
             [
                 'name' => 'Arrhythmia',
                 'deskripsi' => 'A condition where the heart beats with an irregular or abnormal rhythm.',
+                'visibilitas' => 'publik',
                 'schema' => [
                     "columns" => [
                         ["name" => "record", "type" => "string", "is_visible" => true],
@@ -32,6 +33,7 @@ class DiseaseSeeder extends Seeder
             [
                 'name' => 'Myocardial',
                 'deskripsi' => 'A condition related to heart muscle injury or damage.',
+                'visibilitas' => 'publik',
                 'schema' => [
                     "columns" => [
                         ["name" => "nama_pasien", "type" => "string", "is_visible" => true],
@@ -40,7 +42,7 @@ class DiseaseSeeder extends Seeder
                         ["name" => "tanggal_lahir", "type" => "date", "is_visible" => true],
                         ["name" => "tempat_tes", "type" => "string", "is_visible" => true],
                         ["name" => "tanggal_tes", "type" => "datetime", "is_visible" => true],
-                        ["name" => "record_data", "type" => "file", "format" => "audio", "multiple" => true]
+                        ["name" => "record_data", "type" => "file", "format" => "audio", "multiple" => 1]
                     ]
                 ],
                 'cover_page' => null,

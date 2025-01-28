@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('deskripsi');
+            $table->enum('visibilitas', ['publik', 'privat'])->default('publik');
             $table->jsonb('schema');
             $table->string('cover_page')->nullable();
             $table->timestamps();

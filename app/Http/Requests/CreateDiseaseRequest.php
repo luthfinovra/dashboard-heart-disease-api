@@ -19,6 +19,7 @@ class CreateDiseaseRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'deskripsi' => 'nullable|string|max:65535',
+            'visibilitas' => 'required|in:publik,privat',
             'schema' => 'required|array',
             'schema.columns' => 'required|array',
             'schema.columns.*.name' => [

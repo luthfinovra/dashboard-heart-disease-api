@@ -34,6 +34,7 @@ class EditDiseaseRequest extends FormRequest
             'diseaseId' => 'required|integer|exists:diseases,id',
             'name' => 'sometimes|required|string|max:255',
             'deskripsi' => 'sometimes|nullable|string|max:65535',
+            'visibilitas' => 'sometimes|required|in:publik,privat',
             //'schema' => 'required|json',
             'cover_page' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];

@@ -13,6 +13,7 @@ class Disease extends Model
     protected $fillable = [
         'name',
         'deskripsi',
+        'visibilitas',
         'schema',
         'cover_page'
     ];
