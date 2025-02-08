@@ -18,7 +18,9 @@ class DiseaseRecordService
     private const DEFAULT_PER_PAGE = 10;
     private const MAX_PER_PAGE = 100;
 
-    public function __construct(DiseaseService $diseaseService, FileStorageService $fileStorage)
+    public function __construct(
+        DiseaseService $diseaseService, 
+        FileStorageService $fileStorage)
     {
         $this->diseaseService = $diseaseService;
         $this->fileStorage = $fileStorage;
@@ -234,6 +236,8 @@ class DiseaseRecordService
         try {
             DB::beginTransaction();
             $diseaseRecord = DiseaseRecord::find($recordId);
+            $diseaseId = $diseaseRecord->disease_id;
+
             if (!$diseaseRecord) {
                 DB::rollBack();
                 LogActionService::logAction(
@@ -249,7 +253,7 @@ class DiseaseRecordService
             }
 
             $recordInfo = [
-                'disease_id' => $diseaseRecord->disease_id,
+                'disease_id' => $diseaseId,
                 'data_fields' => array_keys($diseaseRecord->data),
                 'file_count' => collect($diseaseRecord->data)
                     ->flatten()
@@ -259,30 +263,10 @@ class DiseaseRecordService
                     ->count()
             ];
 
-            $diseaseId = $diseaseRecord->disease_id;
-
             [$schema, $message] = $this->diseaseService->getSchemaField($diseaseId);
+            $recordData = $diseaseRecord->data;
 
-
-            // echo($diseaseRecord->data['file_detak_jantung']);
-
-            // $path = $diseaseRecord->data['file_detak_jantung'];
-            // echo($normalizedPath = str_replace(['\\', '/'], '/', $path));
-            // echo(is_string($path));
-            // echo(storage_path("app/public/{$path}"));
-            foreach ($diseaseRecord->data as $key => $value) {
-                
-                $fieldSchema = collect($schema)->firstWhere('name', $key);
-
-                if (is_array($value)) {
-                    foreach ($value as $filePath) {
-                        $this->fileStorage->deleteFile($filePath, true);
-                    }
-                } elseif (is_string($value) && $fieldSchema['type'] === 'file') {
-                    // echo($value);
-                    $this->fileStorage->deleteFile($value, true);
-                }
-            }
+            $this->deleteRecordFiles($recordData, $schema);
             
             $diseaseRecord->delete();
             
@@ -473,5 +457,25 @@ class DiseaseRecordService
         return count(array_filter($value, function ($item) {
             return is_object($item) && method_exists($item, 'getClientOriginalExtension');
         })) > 0;
+    }
+
+    public function deleteRecordFiles(array $data, array $schema): void
+    {
+        foreach ($data as $key => $value) {
+            $fieldSchema = collect($schema)->firstWhere('name', $key);
+
+            // Only proceed if this is a file field
+            if ($fieldSchema && $fieldSchema['type'] === 'file') {
+                if (is_array($value)) {
+                    // Multiple files
+                    foreach ($value as $filePath) {
+                        $this->fileStorage->deleteFile($filePath, true);
+                    }
+                } elseif (is_string($value)) {
+                    // Single file
+                    $this->fileStorage->deleteFile($value, true);
+                }
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
 <?php
-// app/Services/FileStorageService.php
+
 namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
@@ -51,5 +51,23 @@ class FileStorageService
                 abort(404, 'File not found');
             }
         }, basename($filePath));
+    }
+
+    public function deleteDirectory(string $directory, bool $isPublic = false): bool
+    {
+        $fullPath = $isPublic ? 'public/' . $directory : $directory;
+
+        $fullPathResolved = realpath(storage_path('app/' . $fullPath));
+        $allowedDirectory = realpath(storage_path('app/diseases/'));
+
+        if (strpos($fullPathResolved, $allowedDirectory) !== 0) {
+            throw new \Exception('Directory traversal attempt detected!');
+        }
+        
+        if(Storage::exists($fullPath)){
+            Storage::deleteDirectory($fullPath);
+        }
+
+        return !Storage::exists($fullPath);
     }
 }

@@ -48,7 +48,7 @@ class EditDiseaseRecordRequest extends FormRequest
                 'ico', 'jp2', 'j2k', 'avif'
             ],
             'text-document' => [
-                'pdf', 'doc', 'docx', 'xml', 'json', 'html', 'txt', 'rtf', 'odt'
+                'pdf', 'doc', 'docx', 'txt'
             ],
             'compressed-document' => [
                 'zip', '7z', 'tar', 'gz', 'rar', 'bz2', 'xz'
@@ -102,7 +102,7 @@ class EditDiseaseRecordRequest extends FormRequest
                                 $columnRules[] = 'sometimes|required|date';
                                 break;
                             case 'time':
-                                $columnRules[] = 'sometimes|required|date_format:H:i:s';
+                                $columnRules[] = 'sometimes|required|date_format:H:i';
                                 break;
                             case 'file':
                                 $columnRules[] = 'sometimes|required'; // Ensures a file is uploaded.
@@ -113,7 +113,7 @@ class EditDiseaseRecordRequest extends FormRequest
                                     $rules[$columnName] = 'sometimes|required|array|min:1'; 
                                 
                                     // Apply validation to each file in the array.
-                                    $fileRules = ['file']; // Start with basic file validation.
+                                    $fileRules = ['file', 'max:20480']; // Start with basic file validation.
                                     
                                     // Add MIME type validation if a format is specified.
                                     if (!empty($column['format'])) {
@@ -131,7 +131,7 @@ class EditDiseaseRecordRequest extends FormRequest
                                     // print_r($rules);
                                 } else {
                                     // Single file upload handling.
-                                    $columnRules[] = 'sometimes|required|file';
+                                    $columnRules[] = 'sometimes|required|file|max:20480';
                                     
                                     // Add MIME type validation if a format is specified.
                                     if (!empty($column['format'])) {

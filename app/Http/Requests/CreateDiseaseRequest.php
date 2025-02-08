@@ -56,6 +56,7 @@ class CreateDiseaseRequest extends FormRequest
             'schema.columns.required' => 'Columns dalam schema harus diisi.',
             'schema.columns.array' => 'Columns harus dalam format array.',
             'schema.columns.*.name.required' => 'Nama kolom harus diisi.',
+            'schema.columns.*.name.distinct' => 'Nama kolom tidak boleh duplikat',
             'schema.columns.*.name.regex' => 'Nama kolom hanya boleh berisi huruf, angka, dan underscore tanpa spasi.',
             'schema.columns.*.type.required' => 'Tipe kolom harus diisi.',
             'schema.columns.*.type.in' => 'Tipe kolom tidak valid.',
@@ -70,8 +71,14 @@ class CreateDiseaseRequest extends FormRequest
     protected function failedValidation(Validator $validator)
     {
         $errors = $validator->errors()->toArray();
+        $pesan = "Field Error";
+        
         foreach ($errors as $field => $message) {
-            throw new HttpResponseException(ResponseJson::failedResponse("field error", [$field => $message[0]]));
+            if ($message[0] === 'Nama kolom tidak boleh duplikat') {
+                $pesan .= " - Nama kolom tidak boleh duplikat";        
+            }
+            
+            throw new HttpResponseException(ResponseJson::failedResponse($pesan, [$field => $message[0]]));
         }
     }
 }

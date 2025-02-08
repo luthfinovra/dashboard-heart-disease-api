@@ -47,7 +47,7 @@ class CreateDiseaseRecordRequest extends FormRequest
                 'ico', 'jp2', 'j2k', 'avif'
             ],
             'text-document' => [
-                'pdf', 'doc', 'docx', 'xml', 'json', 'html', 'txt', 'rtf', 'odt'
+                'pdf', 'doc', 'docx', 'txt'
             ],
             'compressed-document' => [
                 'zip', '7z', 'tar', 'gz', 'rar', 'bz2', 'xz'
@@ -90,7 +90,7 @@ class CreateDiseaseRecordRequest extends FormRequest
                                 $columnRules[] = 'required|date';
                                 break;
                             case 'time':
-                                $columnRules[] = 'required|date_format:H:i:s';
+                                $columnRules[] = 'required|date_format:H:i';
                                 break;
                             case 'file':
                                 $columnRules[] = 'required';
@@ -99,7 +99,7 @@ class CreateDiseaseRecordRequest extends FormRequest
                                     // Multiple file upload handling
                                     $rules[$columnName] = 'required|array|min:1'; 
                                 
-                                    $fileRules = ['file'];
+                                    $fileRules = ['file', 'max:20480'];
                                     
                                     if (!empty($column['format'])) {
                                         $category = trim($column['format'], '.');
@@ -114,7 +114,7 @@ class CreateDiseaseRecordRequest extends FormRequest
                                     // print_r($rules);
                                 } else {
                                     // Single file upload handling.
-                                    $columnRules[] = 'required|file';
+                                    $columnRules[] = 'required|file|max:20480';
                                     
                                     if (!empty($column['format'])) {
                                         $category = trim($column['format'], '.');

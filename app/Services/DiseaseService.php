@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Services\LogActionService;
+use Illuminate\Support\Facades\Storage;
 
 class DiseaseService
 {
@@ -16,7 +17,8 @@ class DiseaseService
 
     protected $fileStorage;
     
-    public function __construct(FileStorageService $fileStorage)
+    public function __construct(
+        FileStorageService $fileStorage)
     {
         $this->fileStorage = $fileStorage;
     }
@@ -188,6 +190,9 @@ class DiseaseService
             if ($disease->cover_page) {
                 $this->fileStorage->deleteFile($disease->cover_page, true);
             }
+
+            $directoryPath = "diseases/records/$id";
+            $this->fileStorage->deleteDirectory($directoryPath, true);
 
             $disease->delete();
 
