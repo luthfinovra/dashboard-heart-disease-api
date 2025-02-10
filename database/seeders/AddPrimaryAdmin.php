@@ -13,7 +13,9 @@ class AddPrimaryAdmin extends Seeder
      */
     public function run(): void
     {
-        $user = User::where('email', 'admin@example.com')->first();
+        $adminEmail = env('ADMIN_DEFAULT_EMAIL', 'admin@example.com');
+    
+        $user = User::where('email', $adminEmail)->first();
         if ($user && !$user->is_primary_admin) {
             $user->is_primary_admin = true;
             $user->save();

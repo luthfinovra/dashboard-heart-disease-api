@@ -17,15 +17,17 @@ class AdminUserSeeder extends Seeder
      */
     public function run()
     {
-        if (!User::where('email', 'admin@example.com')->exists()) {
+        $adminEmail = env('ADMIN_DEFAULT_EMAIL', 'admin@example.com');
+    
+        if (!User::where('email', $adminEmail)->exists()) {
             $user = User::create([
                 'name' => 'Admin User',
-                'email' => env('ADMIN_DEFAULT_EMAIL', 'admin@example.com'),
+                'email' => $adminEmail,
                 'password' => Hash::make(env('ADMIN_DEFAULT_PASSWORD', 'password')),
                 'role' => 'admin',
                 'approval_status' => 'approved',
             ]);
-
+    
             $user->save();
         }
     }
